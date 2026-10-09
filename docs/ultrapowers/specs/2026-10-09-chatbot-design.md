@@ -19,7 +19,8 @@ Objetivo medible: más pedidos confirmables al mes. Métricas secundarias: conve
 | Seguimiento | Primer contacto automático con detección de intención. Recordatorios mínimos: 2 h, 24 h y 2 días. |
 | Inventario | La hoja de Google «OfficeTure - Productos Entrega Inmediata GHL» es la fuente de verdad. Se sincroniza a Supabase. |
 | Identidad | Asistente virtual con nombre propio. Nombre de trabajo: **Mariana**. Se cambia por variable de entorno cuando los dueños elijan. Si preguntan si es bot, lo dice. |
-| Infraestructura | Carpeta `bot/` en este repo, proyecto Vercel separado del sitio, Supabase, Claude Sonnet 5.5. |
+| Infraestructura | Carpeta `bot/` en este repo, proyecto Vercel Pro separado del sitio, Supabase Pro en `us-east-1`, Claude Sonnet 5.5, Node 24. |
+| Alta de WhatsApp | Top Digital se registra como Tech Provider de Meta y conecta el número con Embedded Signup v4 en modo coexistencia. Mientras se aprueba, todo se construye y prueba con el número de prueba de Meta. |
 | Flujo de trabajo | Auto-commit y auto-push en la rama `chatbot`; specs e investigación se commitean. |
 
 ### Fuentes
@@ -52,10 +53,11 @@ turno de respuesta  ── carga contexto ── Claude + herramientas ── en
 | Componente | Responsabilidad | Depende de |
 |------------|-----------------|------------|
 | `api/webhook` | Verificación GET de Meta. POST: validar `X-Hub-Signature-256`, deduplicar por id de mensaje, guardar evento crudo, normalizar a `MensajeEntrante`, agendar turno. Responde en menos de 1 s. | Adaptadores, Supabase |
-| Cola de turnos | Un turno por conversación con `responder_en = ahora + 4 s`. Cada mensaje nuevo reprograma el turno. Al vencer, ejecuta el trabajador. | Supabase o cola de Vercel (se decide en investigación) |
-| Trabajador | Carga últimos 30 mensajes, estado del lead, modo de la conversación. Si el modo no es `bot`, no responde (única excepción: el aviso de una sola vez en `esperando_humano`, sección 6). Llama a Claude con herramientas, ejecuta llamadas, envía respuesta en una o dos burbujas, guarda todo. | Claude, adaptadores, Supabase |
-| Adaptador WhatsApp | Entrada: texto, imagen, audio, ubicación, botón, referencia de anuncio (`referral`), eco de mensajes de Bryan. Salida: texto, imagen, plantilla, indicador de «escribiendo» y marcar leído. | Graph API |
-| Adaptador Instagram | Entrada: texto, imagen, historia respondida, referencia de anuncio. Salida: texto e imagen. Eco de respuestas enviadas desde la app de IG. | Graph API |
+| Cola de turnos | Columna `responder_en` en `conversaciones`. El webhook la mueve a `ahora + 4 s` con cada mensaje. `pg_cron` cada 5 s llama por `pg_net` a `POST /api/despachar`, que toma las vencidas con `for update skip locked`, las marca en proceso y ejecuta el trabajador con `waitUntil`. El cron de Vercel por minuto llama al mismo despachador como respaldo. Idempotente: un turno en proceso no se toma dos veces. | Supabase (`pg_cron`, `pg_net`), `@vercel/functions` |
+| Trabajador | Carga los mensajes del hilo actual (máximo 30; al superarlos se cierra el hilo, se resume con Claude y se abre uno nuevo con el resumen en el contexto dinámico), estado del lead, modo de la conversación. Si el modo no es `bot`, no responde (única excepción: el aviso de una sola vez en `esperando_humano`, sección 6). Llama a Claude con herramientas, ejecuta llamadas, envía la respuesta en una sola burbuja (dos solo si incluye foto + texto, porque cada mensaje cuesta), guarda todo. | Claude, adaptadores, Supabase |
+| Adaptador WhatsApp | Cliente propio con `fetch` (el paquete oficial de Meta está archivado), versión de Graph en variable de entorno (v25.0 o v26.0). Entrada: texto, imagen, audio, ubicación, botón, referencia de anuncio (`referral`), eco de mensajes de Bryan (`smb_message_echoes`). La media del cliente se descarga en el webhook porque su URL caduca en 5 minutos. Salida: texto, imagen por `media id`, plantilla, y «escribiendo» + leído en una sola llamada. | Graph API |
+| Adaptador Instagram | Instagram Messaging API con Facebook Login y token de página. Entrada: texto, imagen, historia respondida, referencia de anuncio (`ad_id`, `ads_context_data`). Eco de la app de IG por `is_echo: true`; los ecos del propio bot se reconocen por sus ids guardados. Salida: texto (máximo 1,000 bytes) e imagen, `typing_on` y `mark_seen`. | Graph API |
+| Transcripción | Los audios se transcriben con `gpt-4o-mini-transcribe` (alternativa Deepgram Nova-3 `es-419`) antes de pasar a Claude. Si falla, el bot pide que lo escriba. | API de transcripción |
 | Herramientas de Claude | Funciones puras sobre Supabase descritas en sección 4. | Supabase |
 | Sincronizador de inventario | Lee la hoja con cuenta de servicio, valida, hace upsert en `productos`, marca inactivos los que desaparecen. | Google Sheets API |
 | Cron de seguimientos y alertas | Cada minuto: envía recordatorios vencidos, reenvía alertas sin atender, reactiva el bot cuando vencen `humano` o `esperando_humano`. Corre en Supabase (`pg_cron` + `pg_net` llamando a la función) porque el cron de Vercel en plan Hobby es diario; si se contrata Vercel Pro puede moverse. | Supabase, adaptadores |
@@ -130,7 +132,7 @@ Los seguimientos no son una herramienta: los programa el sistema según el estad
 
 ### Modelo
 
-Claude Sonnet 5.5 para responder. Temperatura baja. Entrada con imágenes cuando el cliente manda fotos. Los audios se transcriben antes (se decide el servicio en investigación); si no se puede, el bot pide que lo escriba. Registro de cada llamada: tokens, herramientas usadas, latencia, texto final.
+`claude-sonnet-5-5` con `effort: "low"` y `max_tokens` 1500, SDK `@anthropic-ai/sdk@0.133.0` con `toolRunner`, herramientas `strict: true` y `tool_choice: auto` (Sonnet 5.5 no acepta temperatura ni herramienta forzada). Caché del sistema con `ttl: "1h"`. Timeout 60 s, 2 reintentos. Las imágenes del cliente se redimensionan a 1,568 px y van en base64. La extracción final del lead se hace con salida estructurada en una llamada aparte. Haiku 5.5 queda como alternativa si la eval de escenarios lo aprueba. Registro de cada llamada: tokens, herramientas usadas, latencia, texto final.
 
 ### Lo que no hace
 
@@ -141,6 +143,11 @@ No conversa de temas ajenos; redirige en una línea. No da descuentos. No confir
 - Si el mensaje trae referencia de anuncio, el bot abre reconociendo el tema del anuncio sin repetirlo textualmente, y pregunta lo mínimo para avanzar.
 - Si no trae referencia, clasifica el primer mensaje en: escritorio, silla, archivero, paquete, proyecto completo, pregunta de servicio (horario, ubicación, factura), proveedor, otro. Las categorías de producto entran al flujo de venta. Proyecto completo entra al flujo de calificación corta: personas, mobiliario, municipio, fecha deseada, y escala. Proveedor recibe una respuesta fija con el correo del negocio y se escala con motivo `proveedor` sin flujo de venta. Otro recibe una pregunta de orientación.
 - Saludos sin contenido reciben la apertura del cerebro: qué busca, escritorio, silla, archivero o mobiliario para oficina.
+- Para elegir categoría o municipio puede usar botones de WhatsApp (máximo 3 de 20 caracteres) o una lista (hasta 10 filas). Lo demás, texto libre.
+
+### Aviso de privacidad
+
+La primera vez que el bot va a pedir un dato personal (nombre, teléfono, dirección), antes de pedirlo, manda una línea: «Tus datos los usamos solo para cotizar y entregar tu pedido. Aviso de privacidad: <enlace>.» Se registra en `leads.aviso_enviado`. Datos fiscales no se piden en el chat; la factura se deriva a Bryan. Si el cliente pide que no le escriban, se marca `no_contactar` y se cancelan seguimientos.
 
 ## 6. Triggers y entrada de Bryan
 
@@ -156,7 +163,7 @@ Hay dos clases.
 
 1. El bot manda al cliente el mensaje de transferencia del cerebro («te paso con Bryan López para que confirme disponibilidad, pago y entrega»).
 2. Guarda en `leads` el resumen interno con el formato del cerebro: nombre, empresa, teléfono, producto, cantidad, color, zona, dirección, horario, factura, pago, fecha, comentarios, urgencia, tipo de cliente.
-3. Crea `alerta` y la envía al WhatsApp personal de Bryan con el resumen, el motivo y el nombre del contacto tal como aparece en su app.
+3. Crea `alerta` y la envía al WhatsApp personal de Bryan con el resumen, el motivo y el nombre del contacto tal como aparece en su app. Si Bryan no ha escrito al número del negocio en las últimas 24 h, se usa la plantilla utility `alerta_bryan`. La misma alerta se copia por correo como respaldo gratuito.
 4. Pone la conversación en modo `esperando_humano`. El bot deja de responder, salvo para decir una vez «Bryan te atiende en un momento» si el cliente insiste.
 5. Si Bryan no escribe en ese chat en 30 minutos dentro de horario, la alerta se reenvía a Bryan y se copia al segundo número de dueños. Fuera de horario, las alertas se agrupan y se envían a las 9:00 del siguiente día hábil, además de la alerta inmediata.
 6. `esperando_humano` vence a las 2 horas dentro de horario, o a las 11:00 del siguiente día hábil si se disparó fuera de horario. Al vencer sin eco de Bryan, el bot vuelve a modo `bot`, avisa al cliente con un texto según el motivo (si hubo pedido: «Bryan sigue revisando tu pedido, mientras tanto te ayudo con cualquier duda»; si fue error o queja: «ya estoy de vuelta, dime en qué te ayudo»), y el lead queda marcado `escalado_sin_atender`, que aparece en la alerta diaria. El cliente nunca queda sin respuesta más de 2 horas en horario.
@@ -187,15 +194,14 @@ Si la investigación confirma que coexistencia no está disponible para este nú
 
 | Momento | Condición | Canal y costo | Mensaje |
 |---------|-----------|---------------|---------|
-| 2 h sin respuesta | El cliente dejó el flujo a medias (sin producto, cantidad o municipio) | Mensaje libre dentro de la ventana de 24 h | Seguimiento corto del cerebro, adaptado al punto donde se quedó |
-| 24 h sin respuesta | Ya recibió precio y no contestó | Plantilla aprobada, con costo | «¿Te gustaría avanzar con este modelo o te paso otra opción según tu presupuesto?» |
-| 2 días sin respuesta | Dijo «lo voy a revisar» o no contestó la plantilla anterior | Plantilla aprobada, con costo | Recordatorio de que entrega inmediata depende de inventario y ruta |
+| 3 h sin respuesta | El cliente dejó el flujo a medias o recibió precio y no contestó | Mensaje libre dentro de la ventana de 24 h | Seguimiento corto del cerebro, adaptado al punto donde se quedó |
+| Día siguiente, 10:00 | No contestó el toque 1 | Si la conversación vino de anuncio y sigue dentro de la ventana gratuita de 72 h: libre y gratis. Si no: plantilla utility con costo. | «¿Te gustaría avanzar con este modelo o te paso otra opción según tu presupuesto?», o el recordatorio de inventario y ruta si dijo «lo voy a revisar» |
 
-Los programa el sistema, no Claude: cuando el trabajador envía un mensaje, evalúa el estado de la conversación e inserta en `seguimientos` el siguiente toque que corresponda; el cron solo despacha los vencidos. Cualquier mensaje del cliente cancela los pendientes. Máximo 3 toques por lead. Después, el lead pasa a estado `frio` y aparece en la alerta diaria a Bryan. No hay seguimientos en modos `esperando_humano`, `humano` o `pausado`, ni a quien pidió que no le escriban.
+Los toques solo salen entre 9:00 y 20:00; si caen fuera, se mueven a las 9:00. Los programa el sistema, no Claude: cuando el trabajador envía un mensaje, evalúa el estado de la conversación e inserta en `seguimientos` el siguiente toque que corresponda; el cron solo despacha los vencidos. Cualquier mensaje del cliente cancela los pendientes. Máximo 2 toques por lead, porque más de dos se percibe como envío masivo y los bloqueos bajan la calidad del número ante Meta. Después, el lead pasa a estado `frio` y aparece en la alerta diaria a Bryan. No hay seguimientos en modos `esperando_humano`, `humano` o `pausado`, ni a quien pidió que no le escriban.
 
-Las plantillas y la ventana de 24 h son de WhatsApp. En Instagram no existen plantillas: ahí solo aplica el toque de 2 horas dentro de la ventana; lo que no contesta en 24 h pasa directo a `frio`.
+Las plantillas y la ventana de 24 h son de WhatsApp. En Instagram no existen plantillas: ahí solo aplica el toque de 3 horas dentro de la ventana; lo que no contesta en 24 h pasa directo a `frio`.
 
-Plantillas a registrar en Meta: `seguimiento_precio`, `seguimiento_revision`, `alerta_bryan` (para que Bryan reciba alertas aunque no haya escrito en 24 h).
+Plantillas a registrar en Meta, todas de categoría utility: `seguimiento_precio`, `seguimiento_revision`, `alerta_bryan` (para que Bryan reciba alertas aunque no haya escrito en 24 h). Si Meta reclasifica alguna como marketing, su costo sube de USD 0.0085 a 0.0397 por envío.
 
 ## 8. Datos
 
@@ -206,7 +212,7 @@ Plantillas a registrar en Meta: `seguimiento_precio`, `seguimiento_revision`, `a
 | `contactos` | id, canal (`whatsapp` / `instagram`), id externo, nombre mostrado, teléfono, empresa, creado |
 | `conversaciones` | id, contacto, canal, modo (`bot` / `esperando_humano` / `humano` / `pausado`), modo_hasta, referencia de anuncio (id, encabezado, cuerpo, ctwa_clid), último mensaje del cliente, último mensaje del bot, estado (`nuevo` / `calificado` / `cotizado` / `pedido` / `transferido` / `ganado` / `perdido` / `frio`) |
 | `mensajes` | id, conversación, autor (`cliente` / `bot` / `humano`), tipo, texto, url de adjunto, id externo, enviado, leído, error |
-| `leads` | id, conversación, los campos del resumen interno, producto de interés, cantidad, presupuesto, urgencia, tipo de cliente, prioritario (bool) y motivos de prioridad, motivo de escalación, escalado_sin_atender (bool), motivo de pérdida, resumen para Bryan |
+| `leads` | id, conversación, los campos del resumen interno, producto de interés, cantidad, presupuesto, urgencia, tipo de cliente, prioritario (bool) y motivos de prioridad, motivo de escalación, escalado_sin_atender (bool), aviso_enviado (bool), no_contactar (bool), motivo de pérdida, resumen para Bryan |
 | `productos` | id, categoría, subcategoría, nombre, slug, precio, stock, prioridad, uso recomendado, respuesta base, medidas, colores, foto, activo, sincronizado |
 | `plantillas` | nombre, idioma, estado de aprobación, cuerpo, variables |
 | `alertas` | id, conversación, motivo, enviada a, enviada en, atendida en, reintentos |
@@ -244,11 +250,22 @@ Bandeja propia: página web móvil dentro de `bot/` protegida con acceso de Supa
 
 ## 12. Despliegue y requisitos externos
 
-- Vercel: proyecto `officeture-bot`, directorio raíz `bot/`, Node 22, variables: tokens de Meta, secreto de verificación, secreto de firma, clave de servicio de Supabase, clave de Anthropic, credenciales de la cuenta de servicio de Google, números de Bryan y del segundo dueño, nombre del asistente.
-- Supabase: proyecto propio del cliente, región más cercana a México.
-- Meta: portafolio de negocio de OfficeTure verificado, app con productos WhatsApp e Instagram, Top Digital como socio con acceso. Permisos a revisar: `whatsapp_business_messaging`, `whatsapp_business_management`, `instagram_basic`, `instagram_manage_messages`, `pages_manage_metadata`. La cuenta de Instagram debe ser profesional y estar ligada a la página de Facebook.
-- Número: 81 2428 3124 en coexistencia. Las alertas salen de ese mismo número hacia los números personales de Bryan y del segundo dueño.
-- Costos variables estimados por conversación: Claude entre $0.20 y $0.60 MXN según largo; plantillas de Meta entre $0.50 y $0.80 MXN cada una; mensajes dentro de la ventana de 24 h iniciados por el cliente sin costo. Supabase y Vercel en planes básicos. Se confirman en investigación.
+- Vercel Pro (el plan Hobby no permite uso comercial ni cron por minuto): proyecto `officeture-bot`, directorio raíz `bot/`, Node 24, región `iad1`, `ignoreCommand` para desplegar solo con cambios en `bot/` (y el sitio ignora `bot/`). Variables: tokens de Meta, secreto de verificación, secreto de firma, clave de servicio de Supabase, clave de Anthropic, clave del servicio de transcripción, credenciales de la cuenta de servicio de Google, números de Bryan y del segundo dueño, correo de alertas, nombre del asistente, URL del aviso de privacidad, versión de Graph API, `CRON_SECRET`.
+- Supabase Pro (el plan Free pausa el proyecto y detiene `pg_cron`): proyecto propio del cliente en `us-east-1`, junto a Vercel `iad1`. Extensiones `pg_cron` y `pg_net`. Llaves nuevas `sb_secret_`.
+- Meta, WhatsApp: Top Digital se registra como Tech Provider. Requiere verificación de negocio de Top Digital, app de Top Digital con App Review de `whatsapp_business_messaging` y `whatsapp_business_management` en acceso avanzado, y Embedded Signup v4 con el flujo de coexistencia (las versiones 2 y 3 caducan el 15-oct-2026). OfficeTure completa el alta desde ese flujo con su propio portafolio y agrega un método de pago en Meta.
+- Meta, Instagram: Instagram Messaging API con Facebook Login en la misma app. Permisos `instagram_basic`, `instagram_manage_messages`, `pages_manage_metadata`, `business_management` con acceso avanzado (App Review con video). La cuenta de Instagram debe ser profesional y estar ligada a la página de Facebook. Token de página de larga duración.
+- Número: 81 2428 3124 en coexistencia. Requisitos: app de WhatsApp Business 2.24.17 o superior; Bryan debe abrir la app al menos cada 14 días o Meta desconecta; el historial se sincroniza una sola vez; WhatsApp para Windows deja de funcionar como dispositivo vinculado. Las alertas salen de ese mismo número hacia los números personales de Bryan y del segundo dueño.
+- Mientras se aprueba el Tech Provider, el desarrollo y las pruebas usan el número de prueba de la app de Meta.
+- Costos mensuales estimados (ver research brief):
+
+| Concepto | Rango |
+|----------|-------|
+| Vercel Pro | USD 20 |
+| Supabase Pro | USD 25 |
+| Claude Sonnet 5.5 (unos USD 0.07 por conversación) | USD 20 a 100 |
+| WhatsApp: mensajes del bot fuera de la ventana gratuita de anuncios (USD 0.0085 cada uno desde el 1-oct-2026), plantillas y alertas | USD 5 a 30 |
+| Transcripción de audio | menos de USD 2 |
+| **Total** | **USD 70 a 175** |
 
 ## 13. Fuera de alcance de la v1
 
@@ -258,7 +275,10 @@ Messenger, chat en el sitio, pagos en línea, panel de inventario propio, respue
 
 1. Confirmar nombre del asistente.
 2. Confirmar WhatsApp que recibe alertas (Bryan) y segundo número de dueños.
-3. Acceso de administrador al portafolio de Meta de OfficeTure y verificación del negocio.
+3. Acceso de administrador al portafolio de Meta de OfficeTure, verificación de su negocio y método de pago en Meta.
 4. Compartir la hoja de inventario con la cuenta de servicio y agregar columnas de medidas, colores, foto y activo.
 5. Aprobar las tres plantillas antes de registrarlas en Meta.
 6. Confirmar horario de atención (el cerebro dice lunes a viernes 9 a 19 y sábado 10 a 19; `CLAUDE.md` lo marca por validar).
+7. Top Digital: iniciar ya la verificación de negocio en Meta para registrarse como Tech Provider; es el paso más lento.
+8. Publicar el aviso de privacidad de OfficeTure (idealmente en el sitio) para enlazarlo desde el chat.
+9. Aprobar el costo fijo de Vercel Pro y Supabase Pro.
