@@ -439,23 +439,38 @@ body.menu-abierto .barra .logo-claro{opacity:1;visibility:visible}
 
 /* ---------- 06 contacto ---------- */
 .contacto{padding:96px 0 110px}
-.contacto-rejilla{display:grid;gap:48px}
-.datos{margin-top:34px;display:grid}
-.datos div{display:grid;gap:4px;padding:16px 0;border-top:1px solid var(--linea)}
-.datos dt{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;font-weight:500;color:var(--sage)}
-.datos dd{font-size:15.5px;color:var(--tinta);font-weight:400}
-.datos a:hover{color:var(--madera)}
-.mapa{margin-top:36px;aspect-ratio:16/10;border-radius:var(--radio);overflow:hidden;background:var(--beige-claro)}
-.mapa iframe{display:block;width:100%;height:100%;border:0}
-.tarjeta-wa{position:relative;background:var(--oliva);color:rgba(239,234,224,.82);padding:40px 28px;border-radius:var(--radio);display:grid;gap:18px;overflow:hidden;align-self:start}
-.tarjeta-wa img{position:absolute;right:-40px;top:-30px;width:220px;opacity:.1;pointer-events:none}
-.tarjeta-wa .ceja{color:var(--sage-claro);margin-bottom:0}
-.tarjeta-wa h3{color:var(--marfil);font-size:clamp(28px,3.4vw,38px);position:relative;font-weight:500;letter-spacing:-.03em}
-.tarjeta-wa h3 em{color:var(--beige)}
-.tarjeta-wa p:not(.ceja){font-size:15px;position:relative}
-.tarjeta-wa .btn{width:100%;position:relative}
-.tarjeta-wa small{font-size:12px;letter-spacing:.04em;color:var(--sage-claro);position:relative}
-@media (min-width:900px){.contacto{padding:130px 0 150px}.contacto-rejilla{grid-template-columns:7fr 5fr;gap:96px;align-items:start}.tarjeta-wa{padding:52px 48px;position:sticky;top:100px}.datos{grid-template-columns:1fr 1fr;column-gap:40px}.mapa{aspect-ratio:16/9}}
+.contacto-cabeza{display:grid;gap:18px;margin-bottom:36px}
+.contacto-cabeza .ceja{margin-bottom:14px}
+.contacto-bajada{font-size:16px;max-width:46ch}
+.contacto-panel{display:grid;gap:14px}
+/* tarjeta oliva con los datos y el WhatsApp */
+.contacto-tarjeta{position:relative;background:var(--oliva);color:rgba(239,234,224,.85);padding:32px 24px 30px;border-radius:22px 22px 22px 90px;overflow:hidden;display:grid;gap:26px;isolation:isolate}
+.contacto-tarjeta>img{position:absolute;right:-50px;top:-40px;width:240px;opacity:.1;pointer-events:none;z-index:0}
+.contacto-datos{display:grid;gap:0;position:relative;z-index:1}
+.contacto-datos li{display:grid;grid-template-columns:22px 1fr;column-gap:16px;align-items:start;padding:16px 0;border-top:1px solid rgba(239,234,224,.14)}
+.contacto-datos li:first-child{border-top:0;padding-top:0}
+.contacto-datos svg{width:22px;height:22px;fill:none;stroke:var(--sage-claro);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin-top:2px}
+.contacto-datos small{display:block;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;font-weight:500;color:var(--sage-claro);margin-bottom:4px}
+.contacto-datos span{font-size:15.5px;line-height:1.5;color:var(--marfil);font-weight:400}
+.contacto-datos a:hover{color:var(--beige)}
+.contacto-wa{position:relative;z-index:1;display:grid;gap:12px;padding-top:24px;border-top:1px solid rgba(239,234,224,.14)}
+.contacto-wa .ceja{color:var(--sage-claro);margin-bottom:0}
+.contacto-wa .btn{width:100%}
+.contacto-wa small{font-size:12.5px;line-height:1.5;color:var(--sage-claro)}
+/* el mapa como panel grande */
+.contacto-mapa{margin:0;display:grid;gap:12px}
+.contacto-mapa iframe{display:block;width:100%;aspect-ratio:4/3;border:0;border-radius:22px 22px 90px 22px;background:var(--beige-claro);filter:saturate(.85) contrast(1.02)}
+.contacto-mapa figcaption{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 20px;font-size:13px;color:var(--texto);padding:0 4px}
+@media (min-width:900px){
+  .contacto{padding:130px 0 150px}
+  .contacto-cabeza{grid-template-columns:1fr auto;align-items:end;column-gap:48px;margin-bottom:44px}
+  .contacto-bajada{max-width:40ch;padding-bottom:6px}
+  .contacto-panel{grid-template-columns:5fr 7fr;gap:18px;align-items:stretch}
+  .contacto-tarjeta{padding:44px 40px 40px}
+  .contacto-wa .btn{width:auto;justify-self:start}
+  .contacto-mapa iframe{aspect-ratio:auto;height:100%;min-height:520px}
+  .contacto-mapa{grid-template-rows:1fr auto}
+}
 
 /* ---------- pie ---------- */
 .pie{color:var(--texto);padding:40px 0 32px;overflow:hidden;border-top:1px solid var(--linea)}
