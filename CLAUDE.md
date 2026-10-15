@@ -54,7 +54,7 @@ Una sola superficie clara `--fondo:#f4f1ea`, esquinas casi rectas (`--radio:4px`
 - **Nada de precios ni textos inventados**: los textos y precios actuales son propuesta; se afinan con el cliente antes de publicar. Dejar la nota del pie hasta que aprueben.
 - **Español de México**, tuteo, sin anglicismos innecesarios, comillas « », sin signos de exclamación.
 - **El sitio es activo del cliente**: repo privado hasta aprobación, proyecto propio en Vercel, dominio del cliente cuando lo compren. No mezclar con el CRM de Top Digital (repo TOP-DIGITAL-SYSTEM) ni con el sitio de la agencia.
-- **Deck y branding** siguen en `Top Digital - fuentes editables` (deck en `decks/office-ture-branding/`); el repo del sitio no los necesita. Si el sitio cambia, hay que recompilar el deck para que sus capturas (láminas 15 a 17) se actualicen.
+- **Deck y branding** siguen en `Top Digital - fuentes editables` (deck en `decks/office-ture-branding/`); el repo del sitio no los necesita. El 14-oct-2026 el deck pasó a 18 láminas con el wordmark terracota y el isotipo nuevos (láminas 5 a 7 y mockups en 11 y 12 hechos en CSS; la versión anterior quedó en `deck-sello.html.bak`). Si el sitio cambia, hay que recapturar `assets/officeture/v2/web-*.jpg` (sirviendo el sitio por HTTP, con Edge para que cargue el video) y recompilar con `node decks/office-ture-branding/build.js`; las capturas van en las láminas 13 a 15.
 - Vercel: proyecto estático, sin framework. Si se agrega formulario real o catálogo administrable, evaluar Supabase o un CMS después de la aprobación.
 
 ## Pendientes del cliente (9-oct-2026)
