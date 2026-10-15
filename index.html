@@ -17,7 +17,6 @@
 <link rel="preload" href="fonts/Poppins-600.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/Poppins-300.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="img/proy-despues.webp" as="image" type="image/webp">
-<script>try{var t=localStorage.getItem("ot-tema");if(t==="azul")document.documentElement.setAttribute("data-tema","azul")}catch(e){}</script>
 <link rel="stylesheet" href="css/estilo.css">
 <script type="application/ld+json">
 {
@@ -54,12 +53,6 @@
 
 <a class="saltar" href="#inicio">Ir al contenido</a>
 
-<!-- selector de propuesta de color: herramienta de revisión, se quita al aprobar -->
-<div class="tema-sel" id="tema-sel" role="group" aria-label="Propuesta de color">
-  <span>Propuesta</span>
-  <button type="button" data-tema="oliva" class="activa"><i style="--c:#8a9a72"></i>Oliva</button>
-  <button type="button" data-tema="azul"><i style="--c:#a0ccc7"></i>Azul</button>
-</div>
 
 <!-- ============ BARRA ============ -->
 <header class="barra" id="barra">
@@ -115,16 +108,17 @@
     </div>
     <div class="hero-velo"></div>
   </div>
-  <div class="cont hero-centro">
-    <p class="ceja revela" style="--d:.1s">Mobiliario de oficina &middot; Monterrey</p>
-    <h1 class="revela" style="--d:.2s">Espacios que te <em>acompañan.</em></h1>
-    <p class="hero-bajada revela" style="--d:.35s">Diseñamos, fabricamos e instalamos el mobiliario de tu oficina. Inventario de entrega inmediata o proyectos completos para tu empresa.</p>
+  <div class="cont hero-abajo">
+    <div class="hero-texto">
+      <p class="ceja revela" style="--d:.1s">Mobiliario de oficina &middot; Monterrey</p>
+      <h1 class="revela" style="--d:.2s">Espacios que te <em>acompañan.</em></h1>
+      <p class="hero-bajada revela" style="--d:.35s">Diseñamos, fabricamos e instalamos el mobiliario de tu oficina. De inventario en 1 a 2 días o a la medida de tu empresa.</p>
+    </div>
     <div class="hero-acciones revela" style="--d:.5s">
       <a class="btn btn-madera" href="inventario.html">Ver inventario</a>
-      <a class="btn btn-blanca" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20mobiliario%20para%20mi%20oficina" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>Cotización en 30 minutos</a>
+      <a class="btn btn-blanca" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20mobiliario%20para%20mi%20oficina" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>Cotizar por WhatsApp</a>
     </div>
   </div>
-  <a class="hero-scroll revela" style="--d:.9s" href="#lineas" aria-label="Bajar"><span></span></a>
 </section>
 
 <!-- ============ DOS LÍNEAS ============ -->
@@ -133,7 +127,6 @@
     <a class="linea-grande aparece" href="inventario.html">
       <figure class="linea-grande-foto">
         <img src="img/prod-semiejecutivo.webp" alt="Escritorio semiejecutivo en L con librero, de entrega inmediata" width="1200" height="1600" loading="lazy">
-        <span class="linea-grande-cta"><b>Ver inventario<svg><use href="#i-flecha"/></svg></b><small>Entrega en 1 a 2 días</small></span>
       </figure>
       <div class="linea-grande-texto">
         <p class="ceja">Línea I &middot; Entrega inmediata</p>
@@ -145,7 +138,6 @@
     <a class="linea-grande aparece" href="equipa.html">
       <figure class="linea-grande-foto">
         <img src="img/proy-despues.webp" alt="Oficina corporativa equipada con estaciones de trabajo y mamparas" width="1600" height="900" loading="lazy">
-        <span class="linea-grande-cta"><b>Arma tu oficina<svg><use href="#i-flecha"/></svg></b><small>Maqueta interactiva</small></span>
       </figure>
       <div class="linea-grande-texto">
         <p class="ceja">Línea II &middot; Equipamiento de oficinas</p>
@@ -160,9 +152,11 @@
 <!-- ============ 01 NOSOTROS ============ -->
 <section class="nosotros" id="nosotros">
   <div class="cont nosotros-rejilla">
-    <div class="nosotros-texto">
+    <div class="nosotros-cabeza">
       <p class="ceja aparece">01 &middot; Nosotros</p>
       <h2 class="aparece">Diseño para una vida <em>real.</em></h2>
+    </div>
+    <div class="nosotros-texto">
       <p class="grande aparece">Creemos en espacios que se viven, que inspiran y que evolucionan contigo. Pensamos cada mueble en las personas que lo van a usar.</p>
       <p class="aparece">Somos una empresa 100&nbsp;% mexicana. Diseñamos y fabricamos mobiliario de oficina en San Nicolás de los Garza para empresas y despachos de Monterrey. Tú nos cuentas tu espacio; nosotros lo proponemos, fabricamos e instalamos.</p>
       <ol class="pilares aparece">
@@ -171,12 +165,11 @@
         <li><span class="n">03</span><b>Funcional</b><p>Fabricación propia a la medida y entrega con instalación, armado o desarmado.</p></li>
       </ol>
     </div>
-    <div class="nosotros-fotos aparece">
-      <figure class="foto-a"><img src="img/nosotros-1.webp" alt="Estaciones de trabajo con mamparas instaladas en un despacho de Monterrey" width="1200" height="1600" loading="lazy"></figure>
-      <figure class="foto-b"><img src="img/nosotros-2.webp" alt="Escritorio ejecutivo en nogal con librero y silla ejecutiva" width="1200" height="1600" loading="lazy"></figure>
-      <p class="nosotros-nota">Fabricado en<br>San Nicolás de los Garza</p>
-    </div>
   </div>
+  <figure class="cont nosotros-foto aparece">
+    <img src="img/nosotros-1.webp" alt="Estaciones de trabajo con mamparas instaladas en un despacho de Monterrey" width="1200" height="1600" loading="lazy">
+    <figcaption><small>Taller propio</small>Fabricado en San Nicolás de los Garza, N.&nbsp;L.</figcaption>
+  </figure>
   <div class="cifras aparece">
     <div class="cont cifras-in">
       <div><b>1 a 2</b><span>días de entrega en productos de inventario</span></div>
@@ -270,7 +263,7 @@
       <li><span class="n">04</span><h3>Entregamos e instalamos</h3><p>Armado o desarmado, en bodega o a domicilio. Tu oficina queda lista para trabajar.</p></li>
     </ol>
     <div class="proceso-cta aparece">
-      <p>¿Tienes un espacio en mente? Mándanos las medidas y te proponemos una distribución.</p>
+      <div><p class="ceja">Empezamos hoy</p><p>¿Tienes un espacio en mente? Mándanos las medidas y te proponemos una distribución.</p></div>
       <a class="btn btn-madera" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20mobiliario%20para%20mi%20oficina" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>Cotización en 30 minutos</a>
     </div>
   </div>

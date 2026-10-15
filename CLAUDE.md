@@ -44,6 +44,10 @@ Fuente actual en `Top Digital - fuentes editables\officeture\v2\` (carpeta de On
 
 **Activos** (en `assets/officeture/` y `assets/officeture/v2/`): logos recortados con transparencia `circulo-{completo,iso}-{marfil,negro,oliva,sage}.png`, `sillon-{completo,iso}-{marfil,negro,oliva,sage}.png`, `wordmark-{marfil,negro}.png`; fotos reales `hero.jpg`, `nosotros.jpg`, `prod-1..4.jpg`, `proy-1..4.jpg`; recortes de las campañas `c1-*.jpg`, `c2-*.jpg`, `campana-1/2.jpg`. Las fotos originales del cliente están en el Drive de Tadeo, carpeta «Fotos OfficeTure» (id `1THk2PXWN24Gq46F-AFom4BLZCB-G9GaF`); se bajan por enlace directo `https://drive.google.com/uc?export=download&id=<id>` (algunas JPEG traen bytes extra: en sharp usar `failOn:'none'`).
 
+## Rediseño del 14-oct-2026 (hay.com / muuto como referencia)
+
+Una sola superficie clara `--fondo:#f4f1ea`, esquinas casi rectas (`--radio:4px`), titulares en Poppins medium, rejillas de foto con pie debajo. Portada con video a toda pantalla (`video/portada.mp4` 1080p60 y `video/portada-movil.mp4` 720p30, recortados desde el segundo 3.6 para saltar la cortinilla del logo; `app.js` elige según el ancho). El selector de propuesta de color y el tema azul se eliminaron. Detalle en `docs/ultrapowers/specs/2026-10-14-redisenio-hay-muuto-design.md`.
+
 ## Reglas de trabajo
 
 - **Mobile first**: todo se revisa primero en iPhone (390 × 844) porque Tadeo y los dueños lo ven en el teléfono. Sin scroll horizontal, gutter de 20 px mínimo.

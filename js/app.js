@@ -10,22 +10,6 @@
   var menu = document.getElementById('menu-movil');
   var reducido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ---- selector de propuesta de color (revisión) ---- */
-  var temaBotones = document.querySelectorAll('#tema-sel button');
-  function pintarTema() {
-    var actual = document.documentElement.getAttribute('data-tema') || 'oliva';
-    temaBotones.forEach(function (b) { b.classList.toggle('activa', b.dataset.tema === actual); });
-  }
-  temaBotones.forEach(function (b) {
-    b.addEventListener('click', function () {
-      if (b.dataset.tema === 'azul') document.documentElement.setAttribute('data-tema', 'azul');
-      else document.documentElement.removeAttribute('data-tema');
-      try { localStorage.setItem('ot-tema', b.dataset.tema); } catch (e) {}
-      pintarTema();
-    });
-  });
-  pintarTema();
-
   /* ---- barra: solo el sello se encoge con el scroll (--p de 0 a 1); la barra
      se vuelve sólida al pasar la portada (o casi de inmediato en interiores) ---- */
   var hero = document.getElementById('inicio');
