@@ -493,9 +493,6 @@
   var ocupado = false;
   var historial = [];
 
-  function guardar() {
-    try { sessionStorage.setItem('turi', JSON.stringify({ h: historial.slice(-40), e: estado })); } catch (e) { /* sin almacenamiento */ }
-  }
 
   function pintar(m) {
     var div = document.createElement('div');
@@ -544,7 +541,6 @@
     brinca();
     ponerChips(r.chips);
     waPie.href = waLink();
-    guardar();
   }
 
   function escribiendo(r) {
@@ -574,7 +570,6 @@
     entrada.value = '';
     var r = responder(texto);
     if (r) escribiendo(r);
-    guardar();
   }
 
   function bienvenida() {
@@ -590,7 +585,6 @@
     lanzador.setAttribute('aria-expanded', 'true');
     lanzador.setAttribute('aria-label', 'Cerrar chat');
     nube.classList.remove('ver');
-    try { sessionStorage.setItem('turi-nube', '1'); } catch (e) { /* sin almacenamiento */ }
     if (!historial.length) bienvenida();
     if (window.matchMedia('(min-width: 560px)').matches) setTimeout(function () { entrada.focus(); }, 200);
   }
@@ -605,7 +599,6 @@
   nube.addEventListener('click', function (e) {
     if (e.target.tagName === 'BUTTON') {
       nube.classList.remove('ver');
-      try { sessionStorage.setItem('turi-nube', '1'); } catch (er) { /* sin almacenamiento */ }
       return;
     }
     abrir();
@@ -613,28 +606,13 @@
   forma.addEventListener('submit', function (e) { e.preventDefault(); enviar(entrada.value); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && raiz.classList.contains('abierta')) cerrar(); });
 
-  // retomar la conversación al cambiar de página
-  try {
-    var previo = JSON.parse(sessionStorage.getItem('turi') || 'null');
-    if (previo && previo.h && previo.h.length) {
-      historial = previo.h;
-      Object.keys(previo.e || {}).forEach(function (k) { estado[k] = previo.e[k]; });
-      historial.forEach(pintar);
-      ponerChips(['Ver productos', 'Hablar con Bryan']);
-      waPie.href = waLink();
-    }
-  } catch (e) { /* sin almacenamiento */ }
-
-  // la nube de saludo aparece una vez por visita
-  var vioNube = false;
-  try { vioNube = sessionStorage.getItem('turi-nube') === '1'; } catch (e) { /* sin almacenamiento */ }
-  if (!vioNube && !historial.length) {
-    setTimeout(function () {
-      if (raiz.classList.contains('abierta')) return;
-      nube.classList.add('ver');
-      saluda();
-    }, 3500);
-  }
+  // cada carga de página empieza de cero: sin conversación guardada y con la nube de saludo
+  try { sessionStorage.removeItem('turi'); sessionStorage.removeItem('turi-nube'); } catch (e) { /* sin almacenamiento */ }
+  setTimeout(function () {
+    if (raiz.classList.contains('abierta')) return;
+    nube.classList.add('ver');
+    saluda();
+  }, 3500);
 
   // Turi saluda con la mano al aparecer la nube y luego cada tanto mientras el chat está cerrado
   function saluda() {
