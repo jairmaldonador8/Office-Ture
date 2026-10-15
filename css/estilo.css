@@ -252,42 +252,30 @@ body.menu-abierto .barra .logo-claro{opacity:1}
 .aparece.visto{opacity:1;transform:none}
 
 /* ---------- 01 nosotros ---------- */
-.nosotros{padding:96px 0 0;overflow:hidden}
-.nosotros-rejilla{display:grid;gap:36px}
-.nosotros .grande{font-size:clamp(20px,2.2vw,28px);line-height:1.35;color:var(--tinta);font-weight:400;max-width:30ch;letter-spacing:-.015em}
-.nosotros-texto>p:not(.ceja):not(.grande){margin-top:22px;max-width:58ch}
-.pilares{display:grid;margin-top:40px;border-top:1px solid var(--linea)}
-.pilares li{display:grid;grid-template-columns:44px 1fr;column-gap:14px;padding:20px 0;border-bottom:1px solid var(--linea)}
-.pilares .n{font-size:11px;letter-spacing:.18em;font-weight:500;color:var(--sage);grid-row:span 2;padding-top:4px}
-.pilares b{font-size:15.5px;color:var(--tinta);display:block;margin-bottom:4px}
-.pilares p{font-size:14.5px;line-height:1.55}
-.nosotros-foto{margin:72px auto 0;display:grid;gap:14px}
-.nosotros-foto img{width:100%;aspect-ratio:4/3;object-fit:cover;filter:var(--foto);border-radius:var(--radio)}
-.nosotros-foto figcaption{font-size:14px;color:var(--texto);display:flex;gap:16px;align-items:baseline}
-.nosotros-foto small{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;font-weight:500;color:var(--sage)}
-.cifras{margin-top:72px;border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);color:var(--tinta)}
-.cifras-in{display:grid;grid-template-columns:1fr 1fr}
-.cifras-in div{padding:30px 22px 30px 0;border-bottom:1px solid var(--linea)}
-.cifras-in div:nth-child(odd){border-right:1px solid var(--linea)}
-.cifras-in div:nth-child(even){padding-left:22px}
-.cifras-in div:nth-last-child(-n+2){border-bottom:none}
-.cifras b{display:block;font-weight:500;font-size:clamp(36px,4.6vw,56px);line-height:.95;letter-spacing:-.04em;color:var(--tinta);font-variant-numeric:lining-nums tabular-nums}
-.cifras b small{font-size:12px;letter-spacing:.16em;text-transform:uppercase;margin-left:6px;color:var(--sage);font-weight:500}
-.cifras span{display:block;margin-top:10px;font-size:12.5px;letter-spacing:.04em;color:var(--texto)}
+/* ---------- nosotros: lámina de revista ----------
+   Collage de dos fotos reales en su formato vertical original (sin recortar a lo ancho,
+   así se ven nítidas), frase corta, tres pilares en una línea y cuatro cifras. */
+.nosotros{padding:24px 0 0}
+.nos-fotos{position:relative;margin:0 0 8%;max-width:520px;width:100%}
+.nos-foto-grande{width:82%;aspect-ratio:3/4;object-fit:cover;filter:var(--foto);border-radius:22px 120px 22px 22px}
+.nos-foto-chica{position:absolute;right:0;bottom:-8%;width:44%;aspect-ratio:3/4;object-fit:cover;filter:var(--foto);border-radius:14px 14px 60px 14px;border:6px solid #fff;box-shadow:0 24px 50px -28px rgba(31,36,27,.45)}
+.nos-fotos figcaption{margin-top:14px;max-width:52%;font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:500;color:var(--tenue);line-height:1.6}
+.nos-texto h2{font-size:clamp(34px,5.4vw,60px);letter-spacing:-.045em;line-height:1}
+.nos-pilares{display:flex;flex-wrap:wrap;gap:0;width:100%;margin-top:8px;border-top:1px solid var(--tinta);border-bottom:1px solid var(--linea)}
+.nos-pilares li{flex:1 1 0;padding:14px 10px 14px 0;display:grid;gap:2px}
+.nos-pilares li+li{padding-left:14px;border-left:1px solid var(--linea)}
+.nos-pilares b{font-weight:500;color:var(--tinta);font-size:15px}
+.nos-pilares span{font-size:12px;color:var(--tenue)}
+.nos-cifras{display:grid;grid-template-columns:1fr 1fr;width:100%;margin:6px 0 0}
+.nos-cifras div{padding:16px 0 4px}
+.nos-cifras dt{font-size:clamp(34px,4vw,48px);font-weight:500;letter-spacing:-.045em;line-height:1;color:var(--tinta);font-variant-numeric:lining-nums}
+.nos-cifras dt small{font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-left:5px;color:var(--sage);font-weight:500}
+.nos-cifras dd{margin:6px 0 0;font-size:12.5px;color:var(--texto)}
 @media (min-width:760px){
-  .nosotros{padding-top:130px}
-  .nosotros-rejilla{grid-template-columns:5fr 7fr;gap:72px;align-items:start}
-  .pilares{grid-template-columns:repeat(3,1fr);gap:0 28px;border-top:none}
-  .pilares li{grid-template-columns:1fr;grid-template-rows:auto auto 1fr;align-content:start;padding:22px 0 26px;border-top:1px solid var(--tinta);border-bottom:none}
-  .pilares .n{grid-row:auto;margin-bottom:18px;padding-top:0;line-height:1}
-  .nosotros-foto{margin-top:110px}
-  .nosotros-foto img{aspect-ratio:21/9}
-  .cifras{margin-top:110px}
-  .cifras-in{grid-template-columns:repeat(4,1fr)}
-  .cifras-in div{padding:44px 28px 44px 0;border-bottom:none!important;border-right:1px solid var(--linea)}
-  .cifras-in div:nth-child(even){padding-left:0}
-  .cifras-in div:not(:first-child){padding-left:28px}
-  .cifras-in div:last-child{border-right:none}
+  .nosotros{padding-top:40px}
+  .nos-cuerpo{grid-template-columns:6fr 5fr}
+  .nos-cuerpo .nos-texto{order:2}
+  .nos-cifras{grid-template-columns:repeat(4,1fr);gap:0 18px}
 }
 
 /* ---------- 02 catálogo ---------- */
