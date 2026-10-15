@@ -6,10 +6,13 @@ Propuesta preparada por Top Digital, octubre de 2026. Estático, sin framework n
 ## Estructura
 
 ```
-index.html        página única (portada, nosotros, catálogo, armemos tu espacio, proyectos, proceso, redes, proveedores, contacto)
+index.html        portada (video, nosotros, proyectos, proceso, redes, proveedores, contacto)
+catalogo.html     catálogo completo en cuatro capítulos: escritorios, sillería, almacenaje y equipamiento
+inventario.html   línea I, entrega inmediata: showroom de seis paradas
+equipa.html       línea II, equipamiento: maqueta «Arma tu oficina»
 css/estilo.css    estilos, mobile first (390 px) con breakpoints 560 / 760 / 900 / 1000 px
 js/app.js         barra, menú móvil, aparición al hacer scroll, showroom (vitrina fija / carrusel), configurador por áreas y formularios → WhatsApp
-js/espacio.js     «Armemos tu espacio»: maqueta SVG animada que se arma según el número de personas y manda la oficina por WhatsApp
+js/espacio.js     pestaña «Equipa tu oficina»: maqueta SVG animada que se arma según el número de personas y manda la oficina por WhatsApp
 img/              fotos reales del cliente en WebP (máx. 1600 px), logos PNG con transparencia, favicon, og.jpg
 fonts/            Poppins woff2 (300 / 300i / 400 / 400i / 500 / 500i / 600 / 700)
 CLAUDE.md         contexto del cliente, marca y reglas de trabajo
