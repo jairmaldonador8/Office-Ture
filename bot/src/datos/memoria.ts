@@ -1,0 +1,294 @@
+import { randomUUID } from "node:crypto";
+import type { Canal, EventoCanal } from "../canales/tipos.js";
+import { ultimos10 } from "../config.js";
+import { type FiltroProductos, filtrarProductos, type Producto } from "../negocio/productos.js";
+import {
+  type Alerta,
+  type Almacen,
+  type Contacto,
+  type Conversacion,
+  type EventoGuardado,
+  type Lead,
+  type LlamadaModelo,
+  leadVacio,
+  type Mensaje,
+  type NuevoMensaje,
+  type Repo,
+  type ResumenDia,
+  type Seguimiento,
+} from "./tipos.js";
+
+/** Asigna claves presentes; las que vienen como undefined se borran. */
+function aplicar<T extends object>(obj: T, cambios: Partial<T>): void {
+  for (const [k, v] of Object.entries(cambios)) {
+    if (v === undefined) delete (obj as Record<string, unknown>)[k];
+    else (obj as Record<string, unknown>)[k] = v;
+  }
+}
+
+export class RepoMemoria implements Repo {
+  eventos = new Map<
+    string,
+    EventoGuardado & { recibido: Date; procesado?: Date; error?: string; intentos: number }
+  >();
+  contactos = new Map<string, Contacto>();
+  conversaciones = new Map<string, Conversacion>();
+  enProceso = new Set<string>();
+  mensajes: Mensaje[] = [];
+  leads = new Map<string, Lead>();
+  productos = new Map<string, Producto>();
+  seguimientos: (Seguimiento & { tomado?: boolean })[] = [];
+  alertas: Alerta[] = [];
+  ventanas = new Map<string, Date>();
+  llamadas: LlamadaModelo[] = [];
+  marcas = new Map<string, string>();
+  /** Equivale a la columna `actualizado` de leads y conversaciones en Supabase. */
+  actualizado = new Map<string, Date>();
+  reloj: () => Date = () => new Date();
+
+  async registrarEvento(idExterno: string, canal: Canal, evento: EventoCanal) {
+    if (this.eventos.has(idExterno)) return false;
+    this.eventos.set(idExterno, { idExterno, canal, evento, recibido: this.reloj(), intentos: 0 });
+    return true;
+  }
+  async marcarEventoProcesado(idExterno: string, error?: string) {
+    const e = this.eventos.get(idExterno);
+    if (!e) return;
+    if (error) e.error = error;
+    else {
+      e.procesado = this.reloj();
+      delete e.error;
+    }
+  }
+  async eventosPendientes(antesDe: Date, limite: number) {
+    const pendientes = [...this.eventos.values()]
+      .filter((e) => !e.procesado && e.recibido < antesDe && e.intentos < 5)
+      .sort((a, b) => a.recibido.getTime() - b.recibido.getTime())
+      .slice(0, limite);
+    for (const e of pendientes) e.intentos++;
+    return pendientes.map(({ idExterno, canal, evento }) => ({ idExterno, canal, evento }));
+  }
+
+  async contactoPorExterno(canal: Canal, idExterno: string) {
+    return [...this.contactos.values()].find((c) => c.canal === canal && c.idExterno === idExterno) ?? null;
+  }
+  async crearContacto(c: Omit<Contacto, "id">) {
+    const nuevo = { ...c, id: randomUUID() };
+    this.contactos.set(nuevo.id, nuevo);
+    return { ...nuevo };
+  }
+  async actualizarContacto(id: string, cambios: Partial<Omit<Contacto, "id">>) {
+    const c = this.contactos.get(id);
+    if (c) aplicar(c, cambios);
+  }
+  async obtenerContacto(id: string) {
+    const c = this.contactos.get(id);
+    if (!c) throw new Error(`Contacto ${id} no existe`);
+    return { ...c };
+  }
+
+  async conversacionDeContacto(contactoId: string) {
+    const c = [...this.conversaciones.values()].find((x) => x.contactoId === contactoId);
+    return c ? { ...c } : null;
+  }
+  async crearConversacion(contactoId: string, canal: Canal) {
+    const c: Conversacion = {
+      id: randomUUID(),
+      contactoId,
+      canal,
+      modo: "bot",
+      estado: "nuevo",
+      hilo: 1,
+      avisoEsperaEnviado: false,
+      toques: 0,
+    };
+    this.conversaciones.set(c.id, c);
+    this.actualizado.set(c.id, this.reloj());
+    return { ...c };
+  }
+  async obtenerConversacion(id: string) {
+    const c = this.conversaciones.get(id);
+    if (!c) throw new Error(`Conversación ${id} no existe`);
+    return { ...c };
+  }
+  async actualizarConversacion(id: string, cambios: Partial<Omit<Conversacion, "id">>) {
+    const c = this.conversaciones.get(id);
+    if (!c) return;
+    aplicar(c, cambios);
+    this.actualizado.set(id, this.reloj());
+  }
+  async conversacionPorReferencia(ref: string) {
+    const usuario = ref.startsWith("@") ? ref.slice(1).toLowerCase() : undefined;
+    const digitos = ultimos10(ref);
+    if (usuario === "" || (usuario === undefined && digitos.length < 10)) return null;
+    const contacto = [...this.contactos.values()].find((c) =>
+      usuario !== undefined
+        ? c.usuario?.toLowerCase() === usuario
+        : ultimos10(c.telefono ?? c.idExterno) === digitos,
+    );
+    return contacto ? this.conversacionDeContacto(contacto.id) : null;
+  }
+
+  async guardarMensaje(m: NuevoMensaje) {
+    const nuevo: Mensaje = { ...m, id: randomUUID(), creado: m.creado ?? this.reloj() };
+    this.mensajes.push(nuevo);
+    return { ...nuevo };
+  }
+  async existeMensajeExterno(idExterno: string) {
+    return this.mensajes.some((m) => m.idExterno === idExterno);
+  }
+  async mensajesDelHilo(conversacionId: string, hilo: number) {
+    return this.mensajes
+      .filter((m) => m.conversacionId === conversacionId && m.hilo === hilo)
+      .sort((a, b) => a.creado.getTime() - b.creado.getTime())
+      .map((m) => ({ ...m }));
+  }
+  async moverAlHilo(conversacionId: string, hilo: number, ultimos: number) {
+    const propios = this.mensajes
+      .filter((m) => m.conversacionId === conversacionId)
+      .sort((a, b) => a.creado.getTime() - b.creado.getTime());
+    for (const m of propios.slice(-ultimos)) m.hilo = hilo;
+  }
+
+  async obtenerLead(conversacionId: string) {
+    if (!this.leads.has(conversacionId)) {
+      this.leads.set(conversacionId, leadVacio(conversacionId));
+      this.actualizado.set(`lead:${conversacionId}`, this.reloj());
+    }
+    return structuredClone(this.leads.get(conversacionId) as Lead);
+  }
+  async actualizarLead(conversacionId: string, cambios: Partial<Omit<Lead, "conversacionId">>) {
+    await this.obtenerLead(conversacionId);
+    aplicar(this.leads.get(conversacionId) as Lead, cambios);
+    this.actualizado.set(`lead:${conversacionId}`, this.reloj());
+    return this.obtenerLead(conversacionId);
+  }
+
+  async buscarProductos(f: FiltroProductos) {
+    return filtrarProductos([...this.productos.values()], f).map((p) => structuredClone(p));
+  }
+  async obtenerProducto(slug: string) {
+    const p = this.productos.get(slug);
+    return p ? structuredClone(p) : null;
+  }
+  async sincronizarProductos(ps: Producto[]) {
+    const vistos = new Set(ps.map((p) => p.slug));
+    let desactivados = 0;
+    for (const [slug, p] of this.productos) {
+      if (!vistos.has(slug) && p.activo) {
+        p.activo = false;
+        desactivados++;
+      }
+    }
+    for (const p of ps) this.productos.set(p.slug, structuredClone(p));
+    return { activos: ps.filter((p) => p.activo).length, desactivados };
+  }
+
+  async tomarTurnos(ahora: Date, limite: number) {
+    const vencidas = [...this.conversaciones.values()]
+      .filter((c) => c.responderEn && c.responderEn <= ahora && !this.enProceso.has(c.id))
+      .sort((a, b) => (a.responderEn as Date).getTime() - (b.responderEn as Date).getTime())
+      .slice(0, limite);
+    for (const c of vencidas) {
+      this.enProceso.add(c.id);
+      delete c.responderEn;
+    }
+    return vencidas.map((c) => c.id);
+  }
+  async liberarTurno(id: string) {
+    this.enProceso.delete(id);
+  }
+
+  async programarSeguimiento(s: Omit<Seguimiento, "id" | "cancelado" | "enviadoEn">) {
+    this.seguimientos.push({ ...s, id: randomUUID(), cancelado: false });
+  }
+  async cancelarSeguimientos(conversacionId: string) {
+    for (const s of this.seguimientos)
+      if (s.conversacionId === conversacionId && !s.enviadoEn) s.cancelado = true;
+  }
+  async tomarSeguimientos(ahora: Date, limite: number) {
+    const listos = this.seguimientos
+      .filter((s) => !s.enviadoEn && !s.cancelado && !s.tomado && s.programadoPara <= ahora)
+      .sort((a, b) => a.programadoPara.getTime() - b.programadoPara.getTime())
+      .slice(0, limite);
+    for (const s of listos) s.tomado = true;
+    return listos.map(({ tomado: _, ...s }) => ({ ...s }));
+  }
+  async marcarSeguimientoEnviado(id: string, cuando: Date) {
+    const s = this.seguimientos.find((x) => x.id === id);
+    if (s) s.enviadoEn = cuando;
+  }
+
+  async conversacionesConModoVencido(ahora: Date) {
+    return [...this.conversaciones.values()]
+      .filter(
+        (c) => (c.modo === "humano" || c.modo === "esperando_humano") && c.modoHasta && c.modoHasta <= ahora,
+      )
+      .map((c) => ({ ...c }));
+  }
+
+  async crearAlerta(a: Omit<Alerta, "id">) {
+    const nueva = { ...a, id: randomUUID() };
+    this.alertas.push(nueva);
+    return { ...nueva };
+  }
+  async actualizarAlerta(id: string, cambios: Partial<Omit<Alerta, "id">>) {
+    const a = this.alertas.find((x) => x.id === id);
+    if (a) aplicar(a, cambios);
+  }
+  async alertasSinAtender(antesDe: Date) {
+    return this.alertas
+      .filter((a) => !a.atendidaEn && a.enviadaEn < antesDe)
+      .sort((a, b) => a.enviadaEn.getTime() - b.enviadaEn.getTime())
+      .map((a) => ({ ...a }));
+  }
+  async atenderAlertas(conversacionId: string, cuando: Date) {
+    for (const a of this.alertas)
+      if (a.conversacionId === conversacionId && !a.atendidaEn) a.atendidaEn = cuando;
+  }
+  async alertaPorExterno(idExterno: string) {
+    const a = this.alertas.find((x) => x.idExterno === idExterno);
+    return a ? { ...a } : null;
+  }
+  async resumenDelDia(desde: Date): Promise<ResumenDia> {
+    const desdeQue = (clave: string) => (this.actualizado.get(clave) ?? new Date(0)) >= desde;
+    return {
+      diferidas: this.alertas
+        .filter((a) => a.diferida && a.enviadaEn >= desde && !a.atendidaEn)
+        .map((a) => ({ ...a })),
+      sinAtender: [...this.leads.values()].filter(
+        (l) => l.escaladoSinAtender && desdeQue(`lead:${l.conversacionId}`),
+      ).length,
+      frios: [...this.conversaciones.values()].filter((c) => c.estado === "frio" && desdeQue(c.id)).length,
+    };
+  }
+
+  async registrarVentanaDueno(telefono: string, cuando: Date) {
+    this.ventanas.set(ultimos10(telefono), cuando);
+  }
+  async ventanaDueno(telefono: string) {
+    return this.ventanas.get(ultimos10(telefono)) ?? null;
+  }
+
+  async registrarLlamadaModelo(l: LlamadaModelo) {
+    this.llamadas.push(l);
+  }
+  async leerMarca(clave: string) {
+    return this.marcas.get(clave) ?? null;
+  }
+  async escribirMarca(clave: string, valor: string) {
+    this.marcas.set(clave, valor);
+  }
+}
+
+export class AlmacenMemoria implements Almacen {
+  archivos = new Map<string, Uint8Array>();
+  async guardar(ruta: string, bytes: Uint8Array) {
+    this.archivos.set(ruta, bytes);
+  }
+  async leer(ruta: string) {
+    const b = this.archivos.get(ruta);
+    if (!b) throw new Error(`No existe ${ruta}`);
+    return b;
+  }
+}
