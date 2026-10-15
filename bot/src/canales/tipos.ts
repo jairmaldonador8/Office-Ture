@@ -36,8 +36,10 @@ export interface EcoHumano {
   para: string;
   /** Solo si no es texto: imagen, audio u otro adjunto. */
   tipo?: TipoMensaje;
-  /** Texto o pie de foto. */
+  /** Texto o pie de foto (en una edición, el texto nuevo si viene). */
   texto?: string;
+  /** Solo WhatsApp: Bryan editó o borró (para todos) un mensaje ya enviado. */
+  accion?: "editado" | "borrado";
   fecha: string;
 }
 

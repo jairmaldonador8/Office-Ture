@@ -134,9 +134,11 @@ async function prepararAdjunto(
 
 /**
  * Eco de un mensaje que salió del número o la cuenta del negocio. Si es un envío del propio
- * bot (ya guardado con su id, o pendiente con el mismo contenido) se ignora; si no, lo mandó
- * Bryan desde su app y el asistente se calla 12 h. Los cambios de estado van antes de guardar
- * el mensaje y son idempotentes, así un reintento siempre los completa.
+ * bot (ya guardado con su id, o en Instagram pendiente con el mismo contenido) se ignora; si
+ * no, lo mandó Bryan desde su app y el asistente se calla 12 h. Los cambios de estado van
+ * antes de guardar el mensaje y son idempotentes, así un reintento siempre los completa.
+ * Una edición de Bryan en WhatsApp se guarda como nota con el texto nuevo; un borrado solo
+ * cuenta como actividad de Bryan (no se guarda mensaje ni se toca el original).
  */
 async function procesarEco(e: EcoHumano, d: Deps): Promise<void> {
   const previo = await d.repo.mensajePorExterno(e.idExterno);
@@ -154,7 +156,11 @@ async function procesarEco(e: EcoHumano, d: Deps): Promise<void> {
   }
 
   const ahora = d.ahora();
-  if (!previo) {
+  // Solo Instagram: según la documentación de Meta, el webhook `smb_message_echoes` de
+  // WhatsApp solo llega por mensajes enviados desde la app de WhatsApp Business o un
+  // dispositivo vinculado, nunca por envíos de la Cloud API. Un eco de WhatsApp sin id
+  // guardado es siempre de Bryan, aunque su texto sea igual a un envío pendiente del bot.
+  if (!previo && e.canal === "instagram") {
     const enviado = fechaValida(e.fecha) ?? ahora;
     const propio = await d.repo.botPendienteParaEco(
       conv.id,
@@ -177,14 +183,18 @@ async function procesarEco(e: EcoHumano, d: Deps): Promise<void> {
   }
   await d.repo.atenderAlertas(conv.id, ahora);
   await d.repo.cancelarSeguimientos(conv.id);
-  if (previo) return;
+  if (previo || e.accion === "borrado") return;
   const tipo = e.tipo ?? "texto";
+  const texto =
+    e.accion === "editado"
+      ? `[Bryan editó un mensaje]${e.texto ? ` ${e.texto}` : ""}`
+      : (e.texto ?? NOTA_ECO[tipo] ?? "");
   await d.repo.guardarMensaje({
     conversacionId: conv.id,
     hilo: conv.hilo,
     autor: "humano",
     tipo,
-    texto: e.texto ?? NOTA_ECO[tipo] ?? "",
+    texto,
     idExterno: e.idExterno,
   });
 }

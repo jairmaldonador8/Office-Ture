@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Canal, EventoCanal } from "../canales/tipos.js";
 import { ultimos10 } from "../config.js";
 import { type FiltroProductos, filtrarProductos, type Producto } from "../negocio/productos.js";
-import { elegirPendiente, type HuellaEco } from "./eco.js";
+import { avisarEcoBorrado, elegirPendiente, type HuellaEco } from "./eco.js";
 import {
   type Alerta,
   type Almacen,
@@ -162,9 +162,11 @@ export class RepoMemoria implements Repo {
       // Mismo criterio que en Supabase: solo se reemplaza un eco humano posterior a la fila.
       if (otro.autor !== "humano" || otro.creado < fila.creado) return;
       this.mensajes = this.mensajes.filter((x) => x !== otro);
+      avisarEcoBorrado(fila.conversacionId);
     }
     if (fila.idExterno === undefined) fila.idExterno = idExterno;
-    else this.mensajes.push({ ...fila, id: randomUUID(), idExterno, creado: this.reloj() });
+    // La copia conserva la hora del envío original para no desordenar el hilo.
+    else this.mensajes.push({ ...fila, id: randomUUID(), idExterno });
   }
   async botPendienteParaEco(conversacionId: string, eco: HuellaEco, desde: Date) {
     const m = elegirPendiente(

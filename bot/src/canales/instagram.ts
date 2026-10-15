@@ -68,7 +68,7 @@ function mensaje(ev: IgEvento, m: IgMensaje): MensajeEntrante {
     return { ...base, tipo: "imagen", mediaUrl: adjunto.payload.url, mime: "image/jpeg" };
   if (adjunto?.type === "audio" && adjunto.payload?.url)
     return { ...base, tipo: "audio", mediaUrl: adjunto.payload.url, mime: "audio/mp4" };
-  if (m.text !== undefined) {
+  if (typeof m.text === "string") {
     const prefijo = m.reply_to?.story ? "[respondió a una historia] " : "";
     return { ...base, tipo: "texto", texto: `${prefijo}${m.text}` };
   }
@@ -99,7 +99,11 @@ export function parsearInstagram(payload: unknown, igUserId: string): EventoCana
           adjunto === "image" ? "imagen" : adjunto === "audio" ? "audio" : adjunto ? "otro" : undefined;
         eventos.push({
           clase: "eco",
-          e: { ...eco, ...(tipo ? { tipo } : {}), ...(m.text ? { texto: m.text } : {}) },
+          e: {
+            ...eco,
+            ...(tipo ? { tipo } : {}),
+            ...(typeof m.text === "string" && m.text ? { texto: m.text } : {}),
+          },
         });
         continue;
       }

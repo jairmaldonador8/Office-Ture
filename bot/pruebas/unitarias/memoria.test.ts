@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { RepoMemoria } from "../../src/datos/memoria.js";
 
 async function conConversacion(repo = new RepoMemoria()) {
@@ -226,10 +226,10 @@ describe("RepoMemoria: ecos de envíos del bot", () => {
     expect(await repo.botPendienteParaEco(conv.id, { texto: largo, esImagen: false }, despues(1))).toBeNull();
   });
 
-  it("botPendienteParaEco de imagen sin texto toma la imagen pendiente más reciente", async () => {
-    const { repo, conv } = await conPendiente("", "imagen");
+  it("botPendienteParaEco de imagen sin texto toma la imagen pendiente más antigua (los ecos llegan en orden)", async () => {
+    const { repo, conv, fila } = await conPendiente("", "imagen");
     repo.reloj = () => despues(1000);
-    const segunda = await repo.guardarMensaje({
+    await repo.guardarMensaje({
       conversacionId: conv.id,
       hilo: 1,
       autor: "bot",
@@ -242,7 +242,7 @@ describe("RepoMemoria: ecos de envíos del bot", () => {
       tipo: "texto",
       texto: "Hola",
     });
-    expect((await repo.botPendienteParaEco(conv.id, { esImagen: true }, T0))?.id).toBe(segunda.id);
+    expect((await repo.botPendienteParaEco(conv.id, { esImagen: true }, T0))?.id).toBe(fila.id);
   });
 
   it("botPendienteParaEco ignora filas con id externo o de otro autor", async () => {
@@ -278,17 +278,22 @@ describe("RepoMemoria: ecos de envíos del bot", () => {
       tipo: "texto",
       idExterno: "out.2",
     });
+    const aviso = vi.spyOn(console, "warn").mockImplementation(() => {});
     await repo.asignarIdExterno(otra.id, "out.2");
+    const linea = aviso.mock.calls.map((c) => c.join(" ")).join(" | ");
+    aviso.mockRestore();
     expect(repo.mensajes.filter((m) => m.idExterno === "out.2").map((m) => m.autor)).toEqual(["bot"]);
+    expect(linea).toContain(conv.id);
   });
 
   it("asignarIdExterno sobre una fila que ya tiene otro id guarda una copia con el nuevo", async () => {
     const { repo, fila } = await conPendiente("Hola");
     await repo.asignarIdExterno(fila.id, "out.1");
+    repo.reloj = () => despues(60_000);
     await repo.asignarIdExterno(fila.id, "out.2");
-    expect(repo.mensajes.map((m) => [m.autor, m.texto, m.idExterno])).toEqual([
-      ["bot", "Hola", "out.1"],
-      ["bot", "Hola", "out.2"],
+    expect(repo.mensajes.map((m) => [m.autor, m.texto, m.idExterno, m.creado])).toEqual([
+      ["bot", "Hola", "out.1", T0],
+      ["bot", "Hola", "out.2", T0],
     ]);
   });
 

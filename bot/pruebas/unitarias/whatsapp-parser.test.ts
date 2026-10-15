@@ -143,6 +143,85 @@ describe("parsearWhatsApp", () => {
     expect(ev[0]).toMatchObject({ clase: "eco", e: { tipo: "imagen", texto: "Así queda" } });
   });
 
+  it("ecos de edición y borrado se marcan con su acción", () => {
+    const ev = parsearWhatsApp(
+      envolver("smb_message_echoes", {
+        message_echoes: [
+          {
+            to: "5218112345678",
+            id: "wamid.e",
+            timestamp: "2",
+            type: "edit",
+            edit: { original_message_id: "wamid.x", message: { type: "text", text: { body: "Nuevo" } } },
+          },
+          { to: "5218112345678", id: "wamid.r", timestamp: "2", type: "revoke", revoke: {} },
+          { to: "5218112345678", id: "wamid.e2", timestamp: "2", type: "edit", edit: "x" },
+        ],
+      }),
+    );
+    expect(ev.map((e) => (e.clase === "eco" ? [e.e.accion, e.e.texto, e.e.tipo] : null))).toEqual([
+      ["editado", "Nuevo", undefined],
+      ["borrado", undefined, undefined],
+      ["editado", undefined, undefined],
+    ]);
+  });
+
+  it("campos de texto que no son cadenas y tipos heredados de Object no se cuelan", () => {
+    const ev = parsearWhatsApp({
+      object: "whatsapp_business_account",
+      entry: [
+        {
+          changes: [
+            {
+              field: "messages",
+              value: {
+                messages: [
+                  { from: "5218100000000", id: "wamid.n", timestamp: "1", type: "text", text: { body: 5 } },
+                  {
+                    from: "5218100000000",
+                    id: "wamid.i",
+                    timestamp: "1",
+                    type: "image",
+                    image: { id: "m", caption: {} },
+                  },
+                ],
+              },
+            },
+            {
+              field: "smb_message_echoes",
+              value: {
+                message_echoes: [
+                  {
+                    to: "5218112345678",
+                    id: "wamid.p",
+                    timestamp: "2",
+                    type: "toString",
+                    text: { body: [] },
+                  },
+                  {
+                    to: "5218112345678",
+                    id: "wamid.c",
+                    timestamp: "2",
+                    type: "image",
+                    image: { caption: 1 },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+    expect(ev).toHaveLength(4);
+    const [n, i, p, c] = ev.map((e) => (e.clase === "mensaje" ? e.m : e.e));
+    expect(n?.texto).toBe("");
+    expect(i?.texto).toBeUndefined();
+    expect(p).not.toHaveProperty("tipo");
+    expect(p).not.toHaveProperty("texto");
+    expect(c).toMatchObject({ tipo: "imagen" });
+    expect(c).not.toHaveProperty("texto");
+  });
+
   it("ignora estados de entrega y payloads desconocidos", () => {
     expect(parsearWhatsApp(envolver("messages", { statuses: [{ id: "w", status: "read" }] }))).toEqual([]);
     expect(parsearWhatsApp({ object: "page" })).toEqual([]);

@@ -2,7 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Canal, EventoCanal } from "../canales/tipos.js";
 import { ultimos10 } from "../config.js";
 import { type FiltroProductos, filtrarProductos, type Producto } from "../negocio/productos.js";
-import { elegirPendiente, type HuellaEco } from "./eco.js";
+import { avisarEcoBorrado, elegirPendiente, type HuellaEco } from "./eco.js";
 import {
   type Alerta,
   type Almacen,
@@ -329,6 +329,7 @@ export class RepoSupabase implements Repo {
       // Solo se reemplaza un eco humano guardado después de crear la fila pendiente.
       if (otro.autor !== "humano" || otro.creado < new Date(fila.creado)) return;
       await this.borrarMensaje(otro.id);
+      avisarEcoBorrado(fila.conversacion_id);
     }
     if (fila.id_externo === null) {
       // Si otro proceso le puso id entretanto, el filtro no toca nada y se revisa de nuevo.
@@ -338,11 +339,16 @@ export class RepoSupabase implements Repo {
         .eq("id", mensajeId)
         .is("id_externo", null)
         .select("id");
-      if (r.error?.code === "23505") return;
+      if (r.error?.code === "23505") {
+        // Otra fila ganó ese id entre la revisión y el update: esta queda pendiente.
+        console.warn("asignarIdExterno: el id externo ya estaba en otra fila", mensajeId, r.error.message);
+        return;
+      }
       if ((ok(r, "asignarIdExterno") as Fila[]).length > 0) return;
       return this.asignarIdExterno(mensajeId, idExterno);
     }
-    const { id: _, id_externo: __, creado: ___, ...copia } = fila;
+    // La copia conserva `creado` del envío original para no desordenar el hilo.
+    const { id: _, id_externo: __, ...copia } = fila;
     const r = await this.db.from("mensajes").insert({ ...copia, id_externo: idExterno });
     if (r.error && r.error.code !== "23505")
       throw new Error(`Supabase (asignarIdExterno): ${r.error.message}`);
@@ -355,7 +361,7 @@ export class RepoSupabase implements Repo {
       .eq("autor", "bot")
       .is("id_externo", null)
       .gte("creado", desde.toISOString())
-      .order("creado", { ascending: false })
+      .order("creado")
       .limit(20);
     return elegirPendiente((ok(r, "botPendienteParaEco") as Fila[]).map(mensaje), eco);
   }

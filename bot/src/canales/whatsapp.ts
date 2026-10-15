@@ -44,6 +44,12 @@ const iso = (ts: unknown): string => {
   return Number.isFinite(d.getTime()) ? d.toISOString() : new Date().toISOString();
 };
 
+/** `x.campo` si `x` es un objeto y el campo es una cadena; si no, undefined. */
+const texto = (x: unknown, campo: string): string | undefined => {
+  const v = typeof x === "object" && x !== null ? (x as Record<string, unknown>)[campo] : undefined;
+  return typeof v === "string" ? v : undefined;
+};
+
 const objetos = (x: unknown): Record<string, unknown>[] =>
   Array.isArray(x) ? x.filter((i): i is Record<string, unknown> => typeof i === "object" && i !== null) : [];
 const cadena = (x: unknown): boolean => typeof x === "string" && x !== "";
@@ -73,11 +79,12 @@ function mensaje(m: WaMensaje, nombre: string | undefined): MensajeEntrante {
   if (m.context?.id) base.citaId = m.context.id;
   switch (m.type) {
     case "text":
-      return { ...base, tipo: "texto", texto: m.text?.body ?? "" };
+      return { ...base, tipo: "texto", texto: texto(m.text, "body") ?? "" };
     case "image": {
       const r: MensajeEntrante = { ...base, tipo: "imagen", mediaId: m.image?.id ?? "" };
       if (m.image?.mime_type) r.mime = m.image.mime_type;
-      if (m.image?.caption) r.texto = m.image.caption;
+      const pie = texto(m.image, "caption");
+      if (pie) r.texto = pie;
       return r;
     }
     case "audio": {
@@ -96,12 +103,12 @@ function mensaje(m: WaMensaje, nombre: string | undefined): MensajeEntrante {
     }
     case "interactive": {
       const r = m.interactive?.button_reply ?? m.interactive?.list_reply;
-      return { ...base, tipo: "boton", texto: r?.title ?? "" };
+      return { ...base, tipo: "boton", texto: texto(r, "title") ?? "" };
     }
     case "button":
-      return { ...base, tipo: "boton", texto: m.button?.text ?? "" };
+      return { ...base, tipo: "boton", texto: texto(m.button, "text") ?? "" };
     default:
-      return { ...base, texto: `[mensaje de tipo ${m.type}]` };
+      return { ...base, texto: `[mensaje de tipo ${String(m.type)}]` };
   }
 }
 
@@ -136,13 +143,27 @@ export function parsearWhatsApp(payload: unknown): EventoCanal[] {
             para: e.to as string,
             fecha: iso(e.timestamp),
           };
-          const tipo = TIPO_ECO_WA[e.type as string];
-          const cuerpo =
-            (e.text as { body?: string } | undefined)?.body ??
-            (e.image as { caption?: string } | undefined)?.caption;
+          const t = typeof e.type === "string" ? e.type : "";
+          const tipo = Object.hasOwn(TIPO_ECO_WA, t) ? TIPO_ECO_WA[t] : undefined;
+          // Edición: el mensaje nuevo viene dentro de `edit.message` (se lee con cuidado
+          // porque la forma no está garantizada). Borrado: no trae contenido que guardar.
+          const accion = t === "edit" ? "editado" : t === "revoke" ? "borrado" : undefined;
+          const fuente =
+            t === "edit"
+              ? (e.edit as { message?: unknown } | null | undefined)?.message
+              : t === "revoke"
+                ? undefined
+                : e;
+          const f = (typeof fuente === "object" && fuente !== null ? fuente : {}) as Record<string, unknown>;
+          const cuerpo = texto(f.text, "body") ?? texto(f.image, "caption");
           eventos.push({
             clase: "eco",
-            e: { ...eco, ...(tipo ? { tipo } : {}), ...(cuerpo ? { texto: cuerpo } : {}) },
+            e: {
+              ...eco,
+              ...(tipo ? { tipo } : {}),
+              ...(accion ? { accion } : {}),
+              ...(cuerpo ? { texto: cuerpo } : {}),
+            },
           });
         }
       }

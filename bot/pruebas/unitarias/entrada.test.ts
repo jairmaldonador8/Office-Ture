@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { recortarBytes } from "../../src/canales/instagram.js";
 import { type EcoHumano, ErrorMeta, type EventoCanal } from "../../src/canales/tipos.js";
+import { parsearWhatsApp } from "../../src/canales/whatsapp.js";
 import { procesarEvento, procesarLote } from "../../src/flujo/entrada.js";
 import { enviarAlCliente } from "../../src/flujo/enviar.js";
 import { depsDePrueba, INICIO, mensajeWa } from "./apoyo.js";
@@ -10,6 +11,25 @@ const IGSID = "IGSID1";
 function eco(e: Partial<EcoHumano> & { idExterno: string }): EventoCanal {
   return { clase: "eco", e: { canal: "instagram", para: IGSID, fecha: INICIO.toISOString(), ...e } };
 }
+
+/** Payload de WhatsApp con un solo eco de la app de Bryan para el cliente de `mensajeWa`. */
+const ecoWa = (eco: object) => ({
+  object: "whatsapp_business_account",
+  entry: [
+    {
+      id: "WABA",
+      changes: [
+        {
+          field: "smb_message_echoes",
+          value: {
+            messaging_product: "whatsapp",
+            message_echoes: [{ from: "5218124283124", to: "5218112345678", timestamp: "1791561600", ...eco }],
+          },
+        },
+      ],
+    },
+  ],
+});
 
 async function conversacionIg(p: ReturnType<typeof depsDePrueba>) {
   await procesarEvento(
@@ -313,6 +333,68 @@ describe("ecos de los envíos del propio bot", () => {
     ]);
   });
 
+  it("eco de WhatsApp con el mismo texto que un envío pendiente del bot es de Bryan (la Cloud API no genera ecos)", async () => {
+    const p = depsDePrueba();
+    await procesarEvento(mensajeWa("hola"), p.deps);
+    const { conv } = await conversacion(p.repo);
+    const pendiente = await p.repo.guardarMensaje({
+      conversacionId: conv.id,
+      hilo: 1,
+      autor: "bot",
+      tipo: "texto",
+      texto: "Hola",
+    });
+    await procesarEvento(
+      {
+        clase: "eco",
+        e: {
+          canal: "whatsapp",
+          idExterno: "wamid.bryan",
+          para: "5218112345678",
+          texto: "Hola",
+          fecha: INICIO.toISOString(),
+        },
+      },
+      p.deps,
+    );
+    expect((await p.repo.obtenerConversacion(conv.id)).modo).toBe("humano");
+    expect(p.repo.mensajes.find((m) => m.id === pendiente.id)?.idExterno).toBeUndefined();
+    expect(await p.repo.mensajePorExterno("wamid.bryan")).toMatchObject({ autor: "humano", texto: "Hola" });
+  });
+
+  it("eco de WhatsApp de un mensaje borrado por Bryan: modo humano sin guardar mensaje", async () => {
+    const p = depsDePrueba();
+    await procesarEvento(mensajeWa("hola"), p.deps);
+    const { conv } = await conversacion(p.repo);
+    const [ev] = parsearWhatsApp(
+      ecoWa({ id: "wamid.borra", type: "revoke", revoke: { original_message_id: "wamid.x" } }),
+    );
+    if (!ev) throw new Error("sin evento");
+    await procesarEvento(ev, p.deps);
+    expect((await p.repo.obtenerConversacion(conv.id)).modo).toBe("humano");
+    expect(await p.repo.mensajePorExterno("wamid.borra")).toBeNull();
+  });
+
+  it("eco de WhatsApp de un mensaje editado por Bryan: modo humano y nota con el texto nuevo", async () => {
+    const p = depsDePrueba();
+    await procesarEvento(mensajeWa("hola"), p.deps);
+    const { conv } = await conversacion(p.repo);
+    const [ev] = parsearWhatsApp(
+      ecoWa({
+        id: "wamid.edita",
+        type: "edit",
+        edit: { original_message_id: "wamid.x", message: { type: "text", text: { body: "Son 6 sillas" } } },
+      }),
+    );
+    if (!ev) throw new Error("sin evento");
+    await procesarEvento(ev, p.deps);
+    expect((await p.repo.obtenerConversacion(conv.id)).modo).toBe("humano");
+    expect(await p.repo.mensajePorExterno("wamid.edita")).toMatchObject({
+      autor: "humano",
+      texto: "[Bryan editó un mensaje] Son 6 sillas",
+    });
+  });
+
   it("eco para un contacto sin conversación avisa en consola con el id enmascarado", async () => {
     const p = depsDePrueba();
     const aviso = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -371,7 +453,7 @@ describe("enviarAlCliente", () => {
     expect(p.repo.mensajes.filter((m) => m.autor === "bot").map((m) => m.idExterno)).toEqual([undefined]);
   });
 
-  it("con intentos reintenta sobre la misma fila", async () => {
+  it("tras un intento dudoso, el que sale guarda su propia fila y la original sigue pendiente", async () => {
     const p = depsDePrueba();
     await procesarEvento(mensajeWa("hola"), p.deps);
     const { contacto, conv } = await conversacion(p.repo);
@@ -383,7 +465,63 @@ describe("enviarAlCliente", () => {
     };
     await enviarAlCliente(p.deps, conv, contacto, { tipo: "texto", texto: "Hola" }, { intentos: 3 });
     expect(p.wa.textos()).toEqual(["Hola"]);
-    expect(p.repo.mensajes.filter((m) => m.autor === "bot").map((m) => m.idExterno)).toEqual(["out.1"]);
+    expect(p.repo.mensajes.filter((m) => m.autor === "bot").map((m) => [m.texto, m.idExterno])).toEqual([
+      ["Hola", undefined],
+      ["Hola", "out.1"],
+    ]);
+  });
+
+  it("si el primer intento sí salió, su eco tardío se reconoce aunque el reintento ya tenga id", async () => {
+    const p = depsDePrueba();
+    const { contacto, conv } = await conversacionIg(p);
+    let intento = 0;
+    p.ig.texto = async () => {
+      intento++;
+      if (intento === 1) throw new Error("tiempo agotado");
+      return "mid.2";
+    };
+    expect(
+      await enviarAlCliente(p.deps, conv, contacto, { tipo: "texto", texto: "Hola" }, { intentos: 2 }),
+    ).toBe("mid.2");
+    await procesarEvento(eco({ idExterno: "mid.1", texto: "Hola" }), p.deps);
+    await procesarEvento(eco({ idExterno: "mid.2", texto: "Hola" }), p.deps);
+    expect((await p.repo.obtenerConversacion(conv.id)).modo).toBe("bot");
+    expect(p.repo.mensajes.filter((m) => m.autor !== "cliente").map((m) => [m.autor, m.idExterno])).toEqual([
+      ["bot", "mid.1"],
+      ["bot", "mid.2"],
+    ]);
+  });
+
+  it("un 429 de Meta se reintenta como resultado dudoso, no como rechazo", async () => {
+    const p = depsDePrueba();
+    await procesarEvento(mensajeWa("hola"), p.deps);
+    const { contacto, conv } = await conversacion(p.repo);
+    let fallas = 1;
+    const original = p.wa.texto.bind(p.wa);
+    p.wa.texto = async (para, texto) => {
+      if (fallas-- > 0) throw new ErrorMeta("whatsapp", 429, 130429, undefined, "límite");
+      return original(para, texto);
+    };
+    expect(
+      await enviarAlCliente(p.deps, conv, contacto, { tipo: "texto", texto: "Hola" }, { intentos: 2 }),
+    ).toBe("out.1");
+    expect(p.repo.mensajes.filter((m) => m.autor === "bot").map((m) => m.idExterno)).toEqual([
+      undefined,
+      "out.1",
+    ]);
+  });
+
+  it("un 429 en el único intento conserva la fila pendiente", async () => {
+    const p = depsDePrueba();
+    await procesarEvento(mensajeWa("hola"), p.deps);
+    const { contacto, conv } = await conversacion(p.repo);
+    p.wa.texto = async () => {
+      throw new ErrorMeta("whatsapp", 429, 130429, undefined, "límite");
+    };
+    await expect(
+      enviarAlCliente(p.deps, conv, contacto, { tipo: "texto", texto: "Hola" }),
+    ).rejects.toBeInstanceOf(ErrorMeta);
+    expect(p.repo.mensajes.filter((m) => m.autor === "bot")).toHaveLength(1);
   });
 });
 

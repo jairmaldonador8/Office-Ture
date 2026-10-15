@@ -100,4 +100,29 @@ describe("aMensajesClaude", () => {
       { type: "text", text: "[Bryan escribió]: Así queda" },
     ]);
   });
+
+  it("un envío del bot sin id de hace más de 2 minutos se marca como posiblemente no entregado", () => {
+    const ahora = new Date(10 * 60_000);
+    const r = aMensajesClaude(
+      [
+        m("cliente", "hola", { creado: new Date(0) }),
+        m("bot", "Viejo sin id", { creado: new Date(ahora.getTime() - 3 * 60_000) }),
+        m("bot", "Viejo con id", { creado: new Date(ahora.getTime() - 3 * 60_000), idExterno: "x" }),
+        m("bot", "Reciente sin id", { creado: new Date(ahora.getTime() - 60_000) }),
+      ],
+      new Map(),
+      ahora,
+    );
+    expect(r[1]?.content).toEqual([
+      { type: "text", text: "[puede que este mensaje no le haya llegado al cliente]" },
+      { type: "text", text: "Viejo sin id" },
+      { type: "text", text: "Viejo con id" },
+      { type: "text", text: "Reciente sin id" },
+    ]);
+  });
+
+  it("sin la hora del turno no marca nada", () => {
+    const r = aMensajesClaude([m("cliente", "hola"), m("bot", "Sin id")], new Map());
+    expect(r[1]?.content).toEqual([{ type: "text", text: "Sin id" }]);
+  });
 });

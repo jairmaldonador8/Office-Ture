@@ -198,6 +198,30 @@ describe("parsearInstagram", () => {
     expect(ev[0]).toMatchObject({ clase: "mensaje", m: { idExterno: "mid.ok", texto: "hola" } });
   });
 
+  it("un text que no es cadena no se usa como texto", () => {
+    const ev = parsearInstagram(
+      envolver([
+        {
+          sender: { id: "IGSID1" },
+          recipient: { id: NEGOCIO },
+          timestamp: 1,
+          message: { mid: "m1", text: 5 },
+        },
+        {
+          sender: { id: NEGOCIO },
+          recipient: { id: "IGSID1" },
+          timestamp: 1,
+          message: { mid: "m2", text: { a: 1 }, is_echo: true },
+        },
+      ]),
+      NEGOCIO,
+    );
+    expect(ev).toHaveLength(2);
+    const [m, e] = ev.map((x) => (x.clase === "mensaje" ? x.m : x.e));
+    expect(m?.texto).not.toContain("5");
+    expect(e).not.toHaveProperty("texto");
+  });
+
   it("sin timestamp usa la hora actual en ISO", () => {
     const ev = parsearInstagram(
       envolver([

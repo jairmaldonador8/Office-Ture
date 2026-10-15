@@ -167,9 +167,9 @@ export interface Repo {
    */
   asignarIdExterno(mensajeId: string, idExterno: string): Promise<void>;
   /**
-   * El envío pendiente del bot (sin id externo, creado desde `desde`) más reciente que
-   * coincide con el eco: mismo texto (también recortado como lo manda Instagram), o la
-   * imagen pendiente más reciente si el eco es una imagen.
+   * El envío pendiente del bot (sin id externo, creado desde `desde`) más antiguo que
+   * coincide con el eco: mismo texto (también recortado como lo manda Instagram), o una
+   * imagen pendiente (con el mismo pie si ambas lo traen). Ver `elegirPendiente`.
    */
   botPendienteParaEco(conversacionId: string, eco: HuellaEco, desde: Date): Promise<Mensaje | null>;
   borrarMensaje(mensajeId: string): Promise<void>;
