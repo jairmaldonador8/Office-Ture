@@ -4,6 +4,8 @@ import { sistemaDinamico, sistemaEstatico } from "../cerebro/prompt.js";
 import {
   ErrorRespuesta,
   type ModeloCliente,
+  opcionesHasta,
+  PRESUPUESTO_TURNO_MS,
   type ResultadoRespuesta,
   responder,
   resumirHilo,
@@ -83,6 +85,7 @@ async function rotarHilo(
   conv: Conversacion,
   mensajes: Mensaje[],
   d: Deps,
+  limite: number,
 ): Promise<{ conv: Conversacion; mensajes: Mensaje[] }> {
   if (mensajes.length <= MAX_MENSAJES_HILO) return { conv, mensajes };
   const transcripcion = [
@@ -92,8 +95,8 @@ async function rotarHilo(
   // El resumen pasa por un modelo que suma el uso, para registrarlo igual que las respuestas.
   const uso: Uso = { entrada: 0, salida: 0, cache: 0 };
   const medido: ModeloCliente = {
-    crear: async (p) => {
-      const r = await d.modelo.crear(p);
+    crear: async (p, o) => {
+      const r = await d.modelo.crear(p, o);
       uso.entrada += r.usage?.input_tokens ?? 0;
       uso.salida += r.usage?.output_tokens ?? 0;
       uso.cache += r.usage?.cache_read_input_tokens ?? 0;
@@ -114,7 +117,9 @@ async function rotarHilo(
     });
   let resumen: string;
   try {
-    resumen = await resumirHilo(medido, d.config.CLAUDE_MODEL, transcripcion);
+    const opciones = opcionesHasta(limite, relojDe(d));
+    if (!opciones) throw new Error("sin tiempo para resumir");
+    resumen = await resumirHilo(medido, d.config.CLAUDE_MODEL, transcripcion, opciones);
   } catch (e) {
     console.error("resumen de hilo", conv.id, errorSeguro(e));
     await registrar(`resumen: ${e instanceof Error ? e.message : String(e)}`);
@@ -143,7 +148,12 @@ export async function procesarTurno(conversacionId: string, d: Deps): Promise<vo
   }
 }
 
+/** El presupuesto del turno se mide con el reloj de las dependencias (falso en pruebas). */
+const relojDe = (d: Deps) => () => d.ahora().getTime();
+
 async function turno(conversacionId: string, d: Deps): Promise<void> {
+  // El presupuesto de Claude cuenta desde que empieza el turno: incluye el resumen del hilo.
+  const limite = d.ahora().getTime() + PRESUPUESTO_TURNO_MS;
   const inicial = await d.repo.obtenerConversacion(conversacionId);
   const leidos = await d.repo.mensajesDelHilo(inicial.id, inicial.hilo);
   const ultimo = ultimoVisible(leidos);
@@ -176,7 +186,7 @@ async function turno(conversacionId: string, d: Deps): Promise<void> {
   }
   if (inicial.modo !== "bot") return;
 
-  const { conv, mensajes } = await rotarHilo(inicial, leidos, d);
+  const { conv, mensajes } = await rotarHilo(inicial, leidos, d, limite);
   const lead = await d.repo.obtenerLead(conv.id);
   const imagenes = await imagenesRecientes(mensajes, d);
   const primerMensajeBot = !conv.ultimoBot;
@@ -204,6 +214,8 @@ async function turno(conversacionId: string, d: Deps): Promise<void> {
       }),
       mensajes: aMensajesClaude(mensajes, imagenes, d.ahora()),
       ctx,
+      reloj: relojDe(d),
+      limite,
     });
   } catch (e) {
     const uso = e instanceof ErrorRespuesta ? e.uso : { entrada: 0, salida: 0, cache: 0 };

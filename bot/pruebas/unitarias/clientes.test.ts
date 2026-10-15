@@ -36,10 +36,36 @@ describe("ClienteWhatsApp", () => {
     expect(cuerpo(llamadas[0])).toEqual({
       messaging_product: "whatsapp",
       recipient_type: "individual",
-      to: "5218112345678",
+      to: "528112345678",
       type: "text",
       text: { body: "Hola", preview_url: false },
     });
+  });
+
+  it("los móviles mexicanos 521 + 10 dígitos se mandan como 52 + 10 en texto, imagen y plantilla", async () => {
+    const { f, llamadas } = fetchFalso([
+      (u) => (u.endsWith("/media") ? json({ id: "media1" }) : undefined),
+      (u) => (u.endsWith("/foto.jpg") ? new Response(new Uint8Array([1, 2]), { status: 200 }) : undefined),
+      () => json({ messages: [{ id: "w" }] }),
+    ]);
+    const wa = new ClienteWhatsApp({ phoneNumberId: "123", token: "t", version: "v25.0", fetch: f });
+    await wa.texto("5218112345678", "Hola");
+    await wa.imagen("5218112345678", "https://x.test/foto.jpg", "pie");
+    await wa.plantilla("5218112345678", "alerta_bryan", []);
+    const destinos = llamadas.filter((l) => l.url.endsWith("/123/messages")).map((l) => cuerpo(l).to);
+    expect(destinos).toEqual(["528112345678", "528112345678", "528112345678"]);
+  });
+
+  it("los demás números se mandan tal cual", async () => {
+    const { f, llamadas } = fetchFalso([() => json({ messages: [{ id: "w" }] })]);
+    const wa = new ClienteWhatsApp({ phoneNumberId: "123", token: "t", version: "v25.0", fetch: f });
+    for (const n of ["528112345678", "14155550100", "52181123456789", "5218112345"]) await wa.texto(n, "x");
+    expect(llamadas.map((l) => cuerpo(l).to)).toEqual([
+      "528112345678",
+      "14155550100",
+      "52181123456789",
+      "5218112345",
+    ]);
   });
 
   it("toda llamada lleva timeout (AbortSignal)", async () => {

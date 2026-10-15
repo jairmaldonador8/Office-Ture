@@ -1,13 +1,37 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { type ContextoHerramientas, DEFINICIONES, ejecutarHerramienta } from "./herramientas.js";
 
+/** Límite de cada llamada a Claude, con un solo reintento del SDK. */
+export const TIEMPO_LLAMADA_MS = 25_000;
+/**
+ * Presupuesto de un turno con Claude. La función tiene maxDuration 120 s (vercel.json): tras
+ * cortar a los 85 s queda margen para registrar el uso, escalar y mandar la cortesía.
+ */
+export const PRESUPUESTO_TURNO_MS = 85_000;
+
+/** Opciones por llamada: `timeout` por intento y `signal` que corta todo, reintentos incluidos. */
+export interface OpcionesLlamada {
+  timeout: number;
+  signal: AbortSignal;
+}
+
 export interface ModeloCliente {
-  crear(p: Anthropic.MessageCreateParamsNonStreaming): Promise<Anthropic.Message>;
+  crear(p: Anthropic.MessageCreateParamsNonStreaming, o?: OpcionesLlamada): Promise<Anthropic.Message>;
 }
 
 export function modeloAnthropic(apiKey: string): ModeloCliente {
-  const cliente = new Anthropic({ apiKey, timeout: 60_000, maxRetries: 2 });
-  return { crear: (p) => cliente.messages.create(p) };
+  const cliente = new Anthropic({ apiKey, timeout: TIEMPO_LLAMADA_MS, maxRetries: 1 });
+  return { crear: (p, o) => cliente.messages.create(p, o) };
+}
+
+/**
+ * Opciones para una llamada que debe terminar antes de `limite` (ms desde epoch según `reloj`):
+ * timeout = mín(25 s, lo que queda). Undefined si ya no queda tiempo.
+ */
+export function opcionesHasta(limite: number, reloj: () => number): OpcionesLlamada | undefined {
+  const restante = limite - reloj();
+  if (restante <= 0) return undefined;
+  return { timeout: Math.min(TIEMPO_LLAMADA_MS, restante), signal: AbortSignal.timeout(restante) };
 }
 
 export interface Uso {
@@ -43,6 +67,10 @@ export interface EntradaResponder {
   mensajes: Anthropic.MessageParam[];
   ctx: ContextoHerramientas;
   maxIteraciones?: number;
+  /** Reloj en ms; por omisión Date.now. */
+  reloj?: () => number;
+  /** Momento (según `reloj`) en que el turno se da por perdido; por omisión, 85 s desde que empieza. */
+  limite?: number;
 }
 
 /**
@@ -96,13 +124,18 @@ export async function responder(e: EntradaResponder): Promise<ResultadoRespuesta
   const usadas: string[] = [];
   const uso: Uso = { entrada: 0, salida: 0, cache: 0 };
   const max = e.maxIteraciones ?? 6;
+  const reloj = e.reloj ?? Date.now;
+  const limite = e.limite ?? reloj() + PRESUPUESTO_TURNO_MS;
   const falla = (mensaje: string, cause?: unknown) =>
     new ErrorRespuesta(mensaje, uso, usadas, cause === undefined ? undefined : { cause });
 
   for (let i = 0; i < max; i++) {
+    // Entre vueltas también corren las herramientas: se revisa el reloj antes de cada llamada.
+    const opciones = opcionesHasta(limite, reloj);
+    if (!opciones) throw falla(`Se agotó el tiempo del turno tras ${i} llamadas al modelo`);
     let r: Anthropic.Message;
     try {
-      r = await e.modelo.crear(parametros(e, mensajes, i));
+      r = await e.modelo.crear(parametros(e, mensajes, i), opciones);
     } catch (err) {
       throw falla(`Error del modelo: ${(err as Error).message}`, err);
     }
@@ -149,15 +182,19 @@ export async function resumirHilo(
   modelo: ModeloCliente,
   model: string,
   transcripcion: string,
+  opciones?: OpcionesLlamada,
 ): Promise<string> {
-  const r = await modelo.crear({
-    model,
-    max_tokens: 1024,
-    system:
-      "Resume esta conversación de ventas de muebles en 3 a 5 frases en español: qué busca el cliente, cantidades, zona, precios ya dados y en qué quedaron. Solo hechos.",
-    messages: [{ role: "user", content: transcripcion }],
-    output_config: { effort: "low" },
-  });
+  const r = await modelo.crear(
+    {
+      model,
+      max_tokens: 1024,
+      system:
+        "Resume esta conversación de ventas de muebles en 3 a 5 frases en español: qué busca el cliente, cantidades, zona, precios ya dados y en qué quedaron. Solo hechos.",
+      messages: [{ role: "user", content: transcripcion }],
+      output_config: { effort: "low" },
+    },
+    opciones,
+  );
   const texto = textoDe(r, " ");
   if (r.stop_reason !== "end_turn" || !texto)
     throw new Error(`Resumen de hilo fallido (stop_reason ${r.stop_reason})`);

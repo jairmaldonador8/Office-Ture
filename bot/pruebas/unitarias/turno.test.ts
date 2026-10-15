@@ -150,6 +150,30 @@ describe("procesarTurno", () => {
     expect(c.ultimoBot).toEqual(INICIO);
   });
 
+  it("si Claude se pasa del presupuesto de 85 s, corta, escala por error y manda la cortesía", async () => {
+    let avanzar: (ms: number) => void = () => {};
+    const guion = modeloGuionado([
+      llamadaHerramienta("buscar_productos", { categoria: "silla" }, "t1"),
+      llamadaHerramienta("buscar_productos", { categoria: "silla" }, "t2"),
+      respuestaTexto("nunca llega"),
+    ]);
+    const lento: ModeloCliente = {
+      crear: async (p) => {
+        avanzar(50_000);
+        return guion.crear(p);
+      },
+    };
+    const p = await conMensaje(lento);
+    avanzar = p.reloj.avanzar;
+    await procesarTurno(p.conv.id, p.deps);
+    expect(guion.llamadas).toBe(2);
+    expect(p.wa.textos(CLIENTE)).toEqual(["Dame un momento, en seguida te atiendo."]);
+    const c = await p.repo.obtenerConversacion(p.conv.id);
+    expect(c).toMatchObject({ modo: "esperando_humano", motivoModo: "error_modelo" });
+    expect(p.repo.llamadas[0]?.error).toMatch(/tiempo/i);
+    expect(p.repo.alertas.map((a) => a.motivo)).toEqual(["error_modelo"]);
+  });
+
   it("nunca manda texto rechazado o truncado: solo la cortesía", async () => {
     const { deps, wa, conv } = await conMensaje([
       {

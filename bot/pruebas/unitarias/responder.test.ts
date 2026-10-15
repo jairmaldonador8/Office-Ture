@@ -1,7 +1,13 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { describe, expect, it } from "vitest";
 import type { ContextoHerramientas } from "../../src/cerebro/herramientas.js";
-import { ErrorRespuesta, type ModeloCliente, responder, resumirHilo } from "../../src/cerebro/responder.js";
+import {
+  ErrorRespuesta,
+  type ModeloCliente,
+  type OpcionesLlamada,
+  responder,
+  resumirHilo,
+} from "../../src/cerebro/responder.js";
 import { RepoMemoria } from "../../src/datos/memoria.js";
 
 function modeloGuionado(respuestas: Partial<Anthropic.Message>[]) {
@@ -208,6 +214,60 @@ describe("responder", () => {
     expect((error as ErrorRespuesta).message).toContain("sin respuesta guionada");
     expect((error as ErrorRespuesta).uso).toEqual({ entrada: 10, salida: 5, cache: 100 });
   });
+
+  it("cada llamada lleva timeout de 25 s como máximo, acotado a lo que queda del presupuesto", async () => {
+    const opciones: (OpcionesLlamada | undefined)[] = [];
+    const { modelo: guion } = modeloGuionado([
+      { stop_reason: "end_turn", content: [{ type: "text", text: "Hola" }] as Anthropic.ContentBlock[] },
+      { stop_reason: "end_turn", content: [{ type: "text", text: "Hola" }] as Anthropic.ContentBlock[] },
+    ]);
+    const modelo: ModeloCliente = {
+      crear: (p, o) => {
+        opciones.push(o);
+        return guion.crear(p);
+      },
+    };
+    const ctx = await contexto();
+    await responder({ ...base, modelo, ctx, reloj: () => 1_000, limite: 101_000 });
+    await responder({ ...base, modelo, ctx, reloj: () => 1_000, limite: 11_000 });
+    expect(opciones.map((o) => o?.timeout)).toEqual([25_000, 10_000]);
+    expect(opciones[0]?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("sin límite explícito, el presupuesto es de 85 s desde que empieza", async () => {
+    let t = 0;
+    const timeouts: number[] = [];
+    const { modelo: guion } = modeloGuionado([usoHerramienta("a"), usoHerramienta("b"), usoHerramienta("c")]);
+    const modelo: ModeloCliente = {
+      crear: async (p, o) => {
+        timeouts.push(o?.timeout ?? 0);
+        t += 35_000;
+        return guion.crear(p);
+      },
+    };
+    const error = await responder({ ...base, modelo, ctx: await contexto(), reloj: () => t }).catch(
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(ErrorRespuesta);
+    expect((error as ErrorRespuesta).message).toMatch(/tiempo/i);
+    // 0 → 35 s → 70 s (quedan 15 s) → 105 s: se corta sin una cuarta llamada.
+    expect(timeouts).toEqual([25_000, 25_000, 15_000]);
+    expect((error as ErrorRespuesta).uso).toEqual({ entrada: 30, salida: 15, cache: 300 });
+    expect((error as ErrorRespuesta).herramientas).toEqual(["info_entrega", "info_entrega", "info_entrega"]);
+  });
+
+  it("si el presupuesto ya se agotó no llama al modelo", async () => {
+    const { modelo, llamadas } = modeloGuionado([usoHerramienta("x")]);
+    const error = await responder({
+      ...base,
+      modelo,
+      ctx: await contexto(),
+      reloj: () => 50_000,
+      limite: 50_000,
+    }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ErrorRespuesta);
+    expect(llamadas).toHaveLength(0);
+  });
 });
 
 describe("resumirHilo", () => {
@@ -223,6 +283,22 @@ describe("resumirHilo", () => {
     );
     expect(llamadas[0]?.tools).toBeUndefined();
     expect(llamadas[0]?.output_config).toEqual({ effort: "low" });
+  });
+
+  it("pasa las opciones de la llamada (timeout y señal) al modelo", async () => {
+    let recibidas: OpcionesLlamada | undefined;
+    const modelo: ModeloCliente = {
+      crear: async (_p, o) => {
+        recibidas = o;
+        return {
+          stop_reason: "end_turn",
+          content: [{ type: "text", text: "Resumen." }],
+        } as unknown as Anthropic.Message;
+      },
+    };
+    const signal = new AbortController().signal;
+    await resumirHilo(modelo, "claude-sonnet-5-5", "x", { timeout: 5_000, signal });
+    expect(recibidas).toEqual({ timeout: 5_000, signal });
   });
 
   it("falla si el resumen viene vacío", async () => {

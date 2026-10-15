@@ -222,6 +222,38 @@ describe("parsearWhatsApp", () => {
     expect(c).not.toHaveProperty("texto");
   });
 
+  it("solo procesa los cambios del número configurado; sin metadata los procesa", () => {
+    const deNumero = (id: string | undefined, wamid: string) => ({
+      field: "messages",
+      value: {
+        messaging_product: "whatsapp",
+        ...(id === undefined
+          ? {}
+          : { metadata: { display_phone_number: "528100000000", phone_number_id: id } }),
+        messages: [
+          { from: "5218100000000", id: wamid, timestamp: "1791561600", type: "text", text: { body: "hola" } },
+        ],
+      },
+    });
+    const payload = {
+      object: "whatsapp_business_account",
+      entry: [
+        {
+          id: "WABA",
+          changes: [
+            deNumero("PNID", "wamid.mio"),
+            deNumero("OTRO", "wamid.ajeno"),
+            deNumero(undefined, "wamid.sin"),
+          ],
+        },
+      ],
+    };
+    const ids = parsearWhatsApp(payload, "PNID").map((e) => (e.clase === "mensaje" ? e.m.idExterno : ""));
+    expect(ids).toEqual(["wamid.mio", "wamid.sin"]);
+    // Sin número configurado no filtra.
+    expect(parsearWhatsApp(payload)).toHaveLength(3);
+  });
+
   it("ignora estados de entrega y payloads desconocidos", () => {
     expect(parsearWhatsApp(envolver("messages", { statuses: [{ id: "w", status: "read" }] }))).toEqual([]);
     expect(parsearWhatsApp({ object: "page" })).toEqual([]);

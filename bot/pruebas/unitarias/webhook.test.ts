@@ -80,6 +80,33 @@ describe("webhook", () => {
     expect(diferidos).toHaveLength(1);
   });
 
+  it("ignora los mensajes dirigidos a otro número de WhatsApp de la cuenta", async () => {
+    const { deps, repo } = depsDePrueba();
+    const ajeno = JSON.stringify({
+      object: "whatsapp_business_account",
+      entry: [
+        {
+          changes: [
+            {
+              field: "messages",
+              value: {
+                metadata: { phone_number_id: "OTRO" },
+                messages: [
+                  { from: "521", id: "wamid.ajeno", timestamp: "1", type: "text", text: { body: "hola" } },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+    const diferidos: Promise<unknown>[] = [];
+    const r = await manejarWebhook(post(ajeno, firmar(ajeno)), "whatsapp", deps, (p) => diferidos.push(p));
+    expect(r.status).toBe(200);
+    expect(repo.eventos.size).toBe(0);
+    expect(diferidos).toHaveLength(0);
+  });
+
   it("autorizado compara el Bearer", () => {
     const con = (h: string) => new Request("https://x", { headers: { authorization: h } });
     expect(autorizado(con("Bearer abc"), "abc")).toBe(true);

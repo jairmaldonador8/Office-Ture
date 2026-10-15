@@ -58,7 +58,9 @@ export async function manejarWebhook(
     return new Response("ok");
   }
   const eventos =
-    canal === "whatsapp" ? parsearWhatsApp(payload) : parsearInstagram(payload, d.config.IG_USER_ID);
+    canal === "whatsapp"
+      ? parsearWhatsApp(payload, d.config.WA_PHONE_NUMBER_ID)
+      : parsearInstagram(payload, d.config.IG_USER_ID);
   const nuevos: EventoCanal[] = [];
   // Si la base falla aquí, el 500 hace que Meta reintente: mejor que perder el mensaje.
   for (const ev of eventos) if (await d.repo.registrarEvento(idEvento(ev), canal, ev)) nuevos.push(ev);

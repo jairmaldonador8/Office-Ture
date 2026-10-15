@@ -112,7 +112,13 @@ function mensaje(m: WaMensaje, nombre: string | undefined): MensajeEntrante {
   }
 }
 
-export function parsearWhatsApp(payload: unknown): EventoCanal[] {
+/**
+ * Eventos del webhook de WhatsApp. Con `phoneNumberId`, descarta los cambios de otros números
+ * de la misma cuenta (su `metadata.phone_number_id` no coincide). Un cambio sin metadata se
+ * procesa: Meta siempre la manda, y así los payloads de prueba armados a mano siguen sirviendo.
+ * Nunca lanza.
+ */
+export function parsearWhatsApp(payload: unknown, phoneNumberId?: string): EventoCanal[] {
   const p = payload as { object?: string; entry?: unknown } | null;
   if (typeof p !== "object" || p === null || p.object !== "whatsapp_business_account") return [];
   const eventos: EventoCanal[] = [];
@@ -122,6 +128,8 @@ export function parsearWhatsApp(payload: unknown): EventoCanal[] {
         string,
         unknown
       >;
+      const numero = texto(v.metadata, "phone_number_id");
+      if (phoneNumberId && numero !== undefined && numero !== phoneNumberId) continue;
       if (cambio.field === "messages") {
         const nombres = new Map<string, string>();
         for (const c of objetos(v.contacts)) {
@@ -172,6 +180,13 @@ export function parsearWhatsApp(payload: unknown): EventoCanal[] {
   return eventos;
 }
 
+/**
+ * El `wa_id` de un móvil mexicano llega como 521 + 10 dígitos, pero la API (y la lista de
+ * números permitidos del número de prueba) lo espera como 52 + 10; mandarle a 521… puede
+ * fallar con 131030. Solo cambia el destino del envío; el contacto se guarda como llegó.
+ */
+export const destinoWhatsApp = (numero: string): string => numero.replace(/^521(\d{10})$/, "52$1");
+
 export interface OpcionesWhatsApp {
   phoneNumberId: string;
   token: string;
@@ -211,7 +226,7 @@ export class ClienteWhatsApp implements Enviador {
     const r = await this.post(`${this.o.phoneNumberId}/messages`, {
       messaging_product: "whatsapp",
       recipient_type: "individual",
-      to: para,
+      to: destinoWhatsApp(para),
       ...contenido,
     });
     return r.messages?.[0]?.id ?? "";
