@@ -16,11 +16,15 @@ const esMimeImagen = (mime: string): mime is MimeImagen => MIMES_IMAGEN.has(mime
 function bloques(m: Mensaje, imagenes: Map<string, ImagenLista>): Bloque[] {
   const salida: Bloque[] = [];
   if (m.tipo === "imagen") {
-    const img = imagenes.get(m.id);
-    if (img && esMimeImagen(img.mime)) {
-      salida.push({ type: "image", source: { type: "base64", media_type: img.mime, data: img.base64 } });
+    if (m.autor === "cliente") {
+      const img = imagenes.get(m.id);
+      if (img && esMimeImagen(img.mime)) {
+        salida.push({ type: "image", source: { type: "base64", media_type: img.mime, data: img.base64 } });
+      } else {
+        salida.push({ type: "text", text: "[el cliente mandó una imagen antes]" });
+      }
     } else {
-      salida.push({ type: "text", text: "[el cliente mandó una imagen que ya no está disponible]" });
+      salida.push({ type: "text", text: "[se envió una foto del producto]" });
     }
   }
   const texto = m.autor === "humano" ? `[Bryan escribió]: ${m.texto ?? ""}` : (m.texto ?? "");

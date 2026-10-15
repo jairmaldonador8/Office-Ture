@@ -64,8 +64,40 @@ describe("aMensajesClaude", () => {
 
   it("imagen sin bytes disponibles se describe con texto", () => {
     const r = aMensajesClaude([m("cliente", "", { tipo: "imagen" })], new Map());
-    expect(r[0]?.content).toEqual([
-      { type: "text", text: "[el cliente mandó una imagen que ya no está disponible]" },
+    expect(r[0]?.content).toEqual([{ type: "text", text: "[el cliente mandó una imagen antes]" }]);
+  });
+
+  it("foto del bot se marca como enviada, sin placeholder de cliente", () => {
+    const r = aMensajesClaude(
+      [
+        m("cliente", "hola"),
+        m("bot", "Mira este modelo", { tipo: "imagen" }),
+        m("bot", "", { tipo: "imagen" }),
+      ],
+      new Map(),
+    );
+    expect(r[1]).toEqual({
+      role: "assistant",
+      content: [
+        { type: "text", text: "[se envió una foto del producto]" },
+        { type: "text", text: "Mira este modelo" },
+        { type: "text", text: "[se envió una foto del producto]" },
+      ],
+    });
+  });
+
+  it("foto de Bryan se marca como enviada y conserva el prefijo en el pie", () => {
+    const foto = m("humano", "Así queda", {
+      tipo: "imagen",
+      adjunto: { ruta: "c/b.jpg", mime: "image/jpeg" },
+    });
+    const r = aMensajesClaude(
+      [m("cliente", "hola"), foto],
+      new Map([[foto.id, { base64: "QUJD", mime: "image/jpeg" }]]),
+    );
+    expect(r[1]?.content).toEqual([
+      { type: "text", text: "[se envió una foto del producto]" },
+      { type: "text", text: "[Bryan escribió]: Así queda" },
     ]);
   });
 });
