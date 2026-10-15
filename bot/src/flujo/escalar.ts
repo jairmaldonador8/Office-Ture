@@ -21,6 +21,8 @@ export function textoAlerta(o: { motivo: string; contacto: Contacto; lead: Lead;
     o.lead.cantidad ? `Cantidad: ${o.lead.cantidad}` : "",
     o.lead.municipio ? `Zona: ${o.lead.municipio}` : "",
     o.lead.factura ? "Requiere factura" : "",
+    o.lead.urgencia ? `Urgencia: ${o.lead.urgencia}` : "",
+    o.lead.tipoCliente ? `Tipo: ${o.lead.tipoCliente}` : "",
   ]
     .filter(Boolean)
     .join(" · ");
@@ -35,12 +37,22 @@ export function textoAlerta(o: { motivo: string; contacto: Contacto; lead: Lead;
     .join("\n");
 }
 
-/** Las variables de plantilla no admiten saltos de línea ni más de 4 espacios seguidos. */
-const variable = (s: string): string =>
-  s
-    .replace(/\s*\n+\s*/g, " · ")
-    .replace(/\s{4,}/g, "   ")
-    .slice(0, 900) || "-";
+const MAX_VARIABLE = 900;
+
+/** Las variables de plantilla no admiten saltos de línea, tabuladores ni más de 4 espacios seguidos. */
+const variable = (s: string): string => {
+  const limpio = s
+    .replace(/[\t\r\n]+/g, " ")
+    .replace(/ {4,}/g, "   ")
+    .trim();
+  if (limpio.length <= MAX_VARIABLE) return limpio || "-";
+  let corte = limpio.slice(0, MAX_VARIABLE);
+  if (limpio[MAX_VARIABLE] !== " ") {
+    const espacio = corte.lastIndexOf(" ");
+    if (espacio > 0) corte = corte.slice(0, espacio);
+  }
+  return `${corte.trimEnd()}…`;
+};
 
 /**
  * Manda un mensaje a un dueño: texto libre si escribió en las últimas 24 h, plantilla alerta_bryan si no.
@@ -81,6 +93,11 @@ export async function ejecutarEscalacion(conversacionId: string, esc: Escalacion
     urgencia: esc.urgencia,
     tipoCliente: esc.tipoCliente,
   });
+  // Idempotencia: turno reintentado o llamada doble con la misma espera y su alerta aún sin atender.
+  if (conv.modo === "esperando_humano" && conv.motivoModo === esc.motivo) {
+    const pendientes = await d.repo.alertasSinAtender(new Date(ahora.getTime() + horas(24 * 365)));
+    if (pendientes.some((a) => a.conversacionId === conversacionId && a.motivo === esc.motivo)) return;
+  }
   const dentro = enHorario(ahora);
   await d.repo.actualizarConversacion(conversacionId, {
     modo: "esperando_humano",
@@ -92,7 +109,10 @@ export async function ejecutarEscalacion(conversacionId: string, esc: Escalacion
   await d.repo.cancelarSeguimientos(conversacionId);
 
   const [principal] = duenos(d.config);
-  if (!principal) return;
+  if (!principal) {
+    console.error("escalación sin dueño configurado: no se mandó alerta", conversacionId, esc.motivo);
+    return;
+  }
   const texto = textoAlerta({ motivo: esc.motivo, contacto, lead, resumen: esc.resumen });
   const idExterno = await enviarADueno(
     principal.telefono,

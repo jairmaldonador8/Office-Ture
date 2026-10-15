@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ErrorMeta } from "../../src/canales/tipos.js";
 import { ejecutarEscalacion, enviarADueno, textoAlerta } from "../../src/flujo/escalar.js";
 import { aLocal } from "../../src/hora.js";
@@ -88,6 +88,59 @@ describe("ejecutarEscalacion", () => {
     expect(repo.alertas[0]?.idExterno).toBeUndefined();
     expect((await repo.obtenerConversacion(conv.id)).modo).toBe("esperando_humano");
   });
+
+  it("repetir la misma escalación no duplica alerta, correo ni reinicia la espera, pero actualiza el resumen", async () => {
+    const correos: string[] = [];
+    const { deps, repo, wa, reloj, conv } = await preparar({
+      correo: async (a) => {
+        correos.push(a);
+      },
+    });
+    await ejecutarEscalacion(conv.id, esc, deps);
+    const hasta = (await repo.obtenerConversacion(conv.id)).modoHasta;
+    reloj.fijar(new Date(INICIO.getTime() + 600_000));
+    await ejecutarEscalacion(conv.id, { ...esc, resumen: "Resumen más nuevo" }, deps);
+    expect(repo.alertas).toHaveLength(1);
+    expect(wa.enviados).toHaveLength(1);
+    expect(correos).toHaveLength(1);
+    expect((await repo.obtenerConversacion(conv.id)).modoHasta).toEqual(hasta);
+    expect((await repo.obtenerLead(conv.id)).resumen).toBe("Resumen más nuevo");
+  });
+
+  it("otro motivo mientras ya espera genera una alerta nueva", async () => {
+    const { deps, repo, conv } = await preparar();
+    await ejecutarEscalacion(conv.id, esc, deps);
+    await ejecutarEscalacion(conv.id, { ...esc, motivo: "queja" }, deps);
+    expect(repo.alertas).toHaveLength(2);
+  });
+
+  it("si la alerta anterior ya se atendió, una nueva escalación del mismo motivo sí alerta", async () => {
+    const { deps, repo, conv } = await preparar();
+    await ejecutarEscalacion(conv.id, esc, deps);
+    await repo.atenderAlertas(conv.id, INICIO);
+    await ejecutarEscalacion(conv.id, esc, deps);
+    expect(repo.alertas).toHaveLength(2);
+  });
+
+  it("limpia tabuladores y retornos de las variables de plantilla y corta a 900 en límite de palabra", async () => {
+    const { deps, wa, conv } = await preparar();
+    const largo = `${"palabra ".repeat(200)}fin`;
+    await ejecutarEscalacion(conv.id, { ...esc, resumen: `uno\tdos\r\ntres\t\t${largo}` }, deps);
+    const v = wa.enviados.find((e) => e.tipo === "plantilla")?.variables?.[2] ?? "";
+    expect(v).not.toMatch(/[\t\r\n]/);
+    expect(v.startsWith("uno dos tres palabra")).toBe(true);
+    expect(v.length).toBeLessThanOrEqual(901);
+    expect(v.endsWith("palabra…")).toBe(true);
+  });
+
+  it("sin dueño configurado registra un error en consola", async () => {
+    const { deps, conv } = await preparar();
+    deps.config = { ...deps.config, DUENOS: "" };
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    await ejecutarEscalacion(conv.id, esc, deps);
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
+  });
 });
 
 describe("enviarADueno", () => {
@@ -138,5 +191,25 @@ describe("textoAlerta", () => {
     expect(t).toContain("@laura.oficina (Instagram)");
     expect(t).not.toContain("Cantidad");
     expect(t).toContain("/bot @laura.oficina");
+  });
+
+  it("incluye urgencia y tipo de cliente cuando existen", () => {
+    const t = textoAlerta({
+      motivo: "descuento",
+      contacto: { id: "c", canal: "whatsapp", idExterno: "5218112345678" },
+      lead: {
+        conversacionId: "x",
+        prioritario: false,
+        motivosPrioridad: [],
+        escaladoSinAtender: false,
+        avisoEnviado: false,
+        noContactar: false,
+        urgencia: "esta_semana",
+        tipoCliente: "empresa",
+      },
+      resumen: "r",
+    });
+    expect(t).toContain("Urgencia: esta_semana");
+    expect(t).toContain("Tipo: empresa");
   });
 });
