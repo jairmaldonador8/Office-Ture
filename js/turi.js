@@ -592,6 +592,7 @@
     raiz.classList.remove('abierta');
     lanzador.setAttribute('aria-expanded', 'false');
     lanzador.setAttribute('aria-label', 'Abrir chat con Turi');
+    if (typeof revisar === 'function') revisar();
   }
 
   lanzador.addEventListener('click', function () { raiz.classList.contains('abierta') ? cerrar() : abrir(); });
@@ -609,18 +610,40 @@
   // cada carga de página empieza de cero: sin conversación guardada y con la nube de saludo
   try { sessionStorage.removeItem('turi'); sessionStorage.removeItem('turi-nube'); } catch (e) { /* sin almacenamiento */ }
   var telefono = window.matchMedia('(max-width: 759px)');
-  setTimeout(function () {
-    if (raiz.classList.contains('abierta')) return;
-    nube.classList.add('ver');
-    saluda();
-    // en el teléfono la nube se va sola para no tapar el sitio
-    if (telefono.matches) setTimeout(function () { nube.classList.remove('ver'); }, 6000);
-  }, 3500);
+  var portada = document.querySelector('.hero');
+  var yaSalio = false;
+
+  // en el teléfono Turi no aparece hasta que la portada (el video) quedó completamente arriba
+  function pasoPortada() {
+    var fin = portada ? portada.getBoundingClientRect().bottom : window.innerHeight * 0.9 - window.scrollY;
+    return fin <= 0;
+  }
+  function revisar() {
+    var ocultar = telefono.matches && !raiz.classList.contains('abierta') && !pasoPortada();
+    raiz.classList.toggle('oculto', ocultar);
+    if (!ocultar && !yaSalio) {
+      yaSalio = true;
+      setTimeout(function () {
+        if (raiz.classList.contains('abierta') || raiz.classList.contains('oculto')) return;
+        nube.classList.add('ver');
+        saluda();
+        if (telefono.matches) setTimeout(function () { nube.classList.remove('ver'); }, 5000);
+      }, telefono.matches ? 600 : 3500);
+    }
+  }
+  var pendiente = false;
+  window.addEventListener('scroll', function () {
+    if (pendiente) return;
+    pendiente = true;
+    requestAnimationFrame(function () { pendiente = false; revisar(); });
+  }, { passive: true });
+  window.addEventListener('resize', revisar);
+  revisar();
 
   // Turi saluda con la mano al aparecer la nube y luego cada tanto mientras el chat está cerrado;
-  // en el teléfono además se asoma desde la orilla con un saltito y se vuelve a esconder
+  // en el teléfono además da un saltito
   function saluda() {
-    if (reducido || raiz.classList.contains('abierta')) return;
+    if (reducido || raiz.classList.contains('abierta') || raiz.classList.contains('oculto')) return;
     lanzador.classList.add('saluda');
     setTimeout(function () { lanzador.classList.remove('saluda'); }, 2600);
   }

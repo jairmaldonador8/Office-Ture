@@ -174,6 +174,11 @@ body.menu-abierto .barra .logo-claro{opacity:1}
 .btn-blanca{background:transparent;color:var(--marfil);border-color:rgba(239,234,224,.55)}
 .btn-blanca:hover{background:var(--marfil);color:var(--tinta);border-color:var(--marfil)}
 @media (min-width:560px){.hero-acciones .btn{width:auto}}
+/* teléfono: la portada llena toda la pantalla, también detrás de la barra flotante de Safari;
+   el texto y los botones se quedan en la parte que siempre es visible */
+@media (max-width:759px){
+  .hero{min-height:100vh;min-height:100lvh;padding-bottom:calc(44px + 100lvh - 100svh)}
+}
 @media (min-width:1000px){
   .hero{padding-bottom:64px}
   .hero-abajo{grid-template-columns:1fr auto;align-items:end;gap:48px}

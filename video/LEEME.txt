@@ -2,7 +2,9 @@ VIDEO DE PORTADA
 
 Archivos:
 - portada.mp4        1920 x 1080, 60 fps, H.264 High, CRF 19, sin audio. Lo carga el escritorio.
-- portada-movil.mp4  1280 x 720, 30 fps, H.264 High, CRF 23, sin audio. Lo carga el telefono (menos de 760 px).
+- portada-movil.mp4  1080 x 1920 vertical, 30 fps, H.264 High, CRF 20, sin audio. Lo carga el telefono (menos de 760 px).
+                     Es el centro del video recortado a lo alto (608 x 1080 de la fuente) y escalado con lanczos,
+                     para que llene la pantalla del telefono sin que el navegador lo amplie.
 
 Fuente original: «Office Ture.mov» del cliente (1080p60, 17 Mbps, 26 s). js/app.js elige el archivo
 segun el ancho de pantalla y no carga ninguno si el usuario tiene activado el ahorro de datos o
@@ -10,7 +12,7 @@ prefiere menos movimiento; en ese caso la portada muestra las fotos con movimien
 
 Para regenerar a partir de un video nuevo (ffmpeg):
   ffmpeg -i fuente.mov -an -c:v libx264 -profile:v high -preset slow -crf 19 -r 60 -pix_fmt yuv420p -movflags +faststart video/portada.mp4
-  ffmpeg -i fuente.mov -an -c:v libx264 -profile:v high -preset medium -crf 23 -r 30 -vf scale=1280:-2 -pix_fmt yuv420p -movflags +faststart video/portada-movil.mp4
+  ffmpeg -ss 3.6 -i fuente.mov -t 22.77 -an -vf "crop=608:1080:(iw-608)/2:0,scale=1080:1920:flags=lanczos,unsharp=5:5:0.6:5:5:0.0,format=yuv420p" -c:v libx264 -profile:v high -preset slow -crf 20 -r 30 -movflags +faststart video/portada-movil.mp4
 
 Recomendaciones para el material: horizontal, 10 a 30 s, bucle limpio, sin texto quemado,
 lo importante en el tercio central (en telefono se recorta a lo alto).
