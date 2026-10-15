@@ -77,8 +77,16 @@
   if (video && hero) {
     var conVideo = function () { hero.classList.add('con-video'); };
     video.addEventListener('canplay', conVideo);
-    if (video.readyState >= 3) conVideo();
     video.addEventListener('error', function () { hero.classList.remove('con-video'); }, true);
+    /* 1080p en escritorio, 720p en teléfono; sin video si el usuario pide ahorrar datos o menos movimiento */
+    var ahorro = navigator.connection && navigator.connection.saveData;
+    if (!reducido && !ahorro) {
+      var movil = window.matchMedia('(max-width: 759px)').matches;
+      video.src = movil ? video.dataset.srcMovil : video.dataset.src;
+      video.load();
+      var intento = video.play();
+      if (intento && intento.catch) intento.catch(function () {});
+    }
   }
 
   /* ---- menú móvil ---- */
