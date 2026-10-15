@@ -135,7 +135,7 @@ body.con-turi .flotante{display:none}
    recuadro claro detrás; la sombra es un óvalo suave dibujado aparte.
    El chat abierto ocupa casi toda la pantalla y se cierra con su propia X. */
 @media (max-width:759px){
-  .turi{--t-x:14px;--t-y:calc(84px + env(safe-area-inset-bottom))}
+  .turi{--t-x:8px;--t-y:calc(44px + env(safe-area-inset-bottom))}
   .turi-lanzador{width:62px;height:62px;transition:transform .5s cubic-bezier(.3,1.3,.5,1),opacity .35s ease}
   .turi-cuerpo img{filter:none}
   .turi-lanzador::before{content:'';position:absolute;left:18%;right:18%;bottom:2px;height:8px;border-radius:50%;
