@@ -54,10 +54,54 @@ const MUNICIPIOS: Municipio[] = [
   { nombre: "Marín", alias: ["marin"], metro: false, mismoDia: false },
 ];
 
-// Alias más largos primero: «san pedro garza garcia» gana sobre «garcia».
-const ALIAS = MUNICIPIOS.flatMap((m) => m.alias.map((a) => ({ alias: a, m }))).sort(
-  (a, b) => b.alias.length - a.alias.length,
-);
+const ALIAS = MUNICIPIOS.flatMap((m) => m.alias.map((a) => ({ alias: a, m })));
+
+// Nombres que también existen como municipio, colonia o calle en otros estados.
+const AMBIGUOS = new Set(["Juárez", "Santiago", "Guadalupe", "García", "Allende", "Hidalgo", "Galeana"]);
+
+// Los otros 31 estados (y algunos países), normalizados. Solo descartan municipios ambiguos.
+const FUERA_DE_NL = [
+  "aguascalientes",
+  "baja california sur",
+  "baja california",
+  "campeche",
+  "chiapas",
+  "chihuahua",
+  "ciudad de mexico",
+  "cdmx",
+  "coahuila",
+  "colima",
+  "durango",
+  "estado de mexico",
+  "edomex",
+  "guanajuato",
+  "guerrero",
+  "hidalgo",
+  "jalisco",
+  "michoacan",
+  "morelos",
+  "nayarit",
+  "oaxaca",
+  "puebla",
+  "queretaro",
+  "quintana roo",
+  "san luis potosi",
+  "sinaloa",
+  "sonora",
+  "tabasco",
+  "tamaulipas",
+  "tlaxcala",
+  "veracruz",
+  "yucatan",
+  "zacatecas",
+  "estados unidos",
+  "usa",
+  "texas",
+  "colombia",
+  "espana",
+].map((e) => ` ${e} `);
+
+const NUEVO_LEON = [" nuevo leon ", " n l ", " nl "];
 
 const normalizar = (s: string): string =>
   ` ${s
@@ -73,11 +117,33 @@ const MANIOBRAS =
 const RECOLECCION =
   "Puede recoger en bodega (Sierra Madre del Sur 413, Col. Vicente Guerrero) con pedido un día antes o el mismo día con 3 horas de anticipación.";
 
+// El municipio suele ir al final de la dirección: gana el match que termina más tarde;
+// a igual final, el alias más largo («san nicolas» sobre «nicolas»).
+function municipioFinal(texto: string): Municipio | undefined {
+  let mejor: { fin: number; largo: number; m: Municipio } | undefined;
+  for (const { alias, m } of ALIAS) {
+    const clave = ` ${alias} `;
+    for (let i = texto.indexOf(clave); i !== -1; i = texto.indexOf(clave, i + 1)) {
+      const fin = i + clave.length;
+      if (!mejor || fin > mejor.fin || (fin === mejor.fin && alias.length > mejor.largo)) {
+        mejor = { fin, largo: alias.length, m };
+      }
+    }
+  }
+  return mejor?.m;
+}
+
+function fueraDeNuevoLeon(texto: string, m: Municipio): boolean {
+  if (!AMBIGUOS.has(m.nombre) || NUEVO_LEON.some((n) => texto.includes(n))) return false;
+  if (m.nombre === "Hidalgo") return texto.trim() !== "hidalgo";
+  return FUERA_DE_NL.some((e) => texto.includes(e));
+}
+
 export function infoEntrega(lugar: string): InfoEntrega {
   const texto = normalizar(lugar);
-  const hallado = ALIAS.find(({ alias }) => texto.includes(` ${alias} `))?.m;
+  const hallado = municipioFinal(texto);
   const comun = { maniobras: MANIOBRAS, recoleccion: RECOLECCION };
-  if (!hallado) {
+  if (!hallado || fueraDeNuevoLeon(texto, hallado)) {
     return {
       municipio: null,
       entregamos: false,

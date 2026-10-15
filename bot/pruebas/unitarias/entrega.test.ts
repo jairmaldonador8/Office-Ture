@@ -44,4 +44,45 @@ describe("infoEntrega", () => {
     expect(i.maniobras).toContain("$200 a $500");
     expect(i.recoleccion).toContain("3 horas");
   });
+
+  describe("el municipio al final gana sobre calles y colonias", () => {
+    it.each([
+      ["Calle Allende, García", "García"],
+      ["Calle Guadalupe, San Pedro", "San Pedro"],
+      ["Av. Juárez 123, Monterrey", "Monterrey"],
+      ["Calle Hidalgo, San Nicolás de los Garza", "San Nicolás"],
+    ])("%s -> %s", (lugar, esperado) => {
+      expect(infoEntrega(lugar).municipio).toBe(esperado);
+    });
+  });
+
+  describe("homónimos de otros estados", () => {
+    it.each(["Ciudad Juárez, Chihuahua", "Guadalupe, Zacatecas", "Pachuca, Hidalgo"])(
+      "%s -> fuera de zona",
+      (lugar) => {
+        expect(infoEntrega(lugar)).toMatchObject({ municipio: null, entregamos: false });
+      },
+    );
+
+    it.each([
+      ["Juárez, N.L.", "Juárez"],
+      ["Guadalupe", "Guadalupe"],
+      ["Hidalgo", "Hidalgo"],
+      ["Hidalgo, Nuevo León", "Hidalgo"],
+      ["Guadalupe, Zacatecas, Nuevo León", "Guadalupe"],
+    ])("%s -> %s", (lugar, esperado) => {
+      expect(infoEntrega(lugar).municipio).toBe(esperado);
+    });
+  });
+
+  describe("normalización", () => {
+    it.each([
+      ["San Nicolas", "San Nicolás"],
+      ["Monterrey centro", "Monterrey"],
+      ["  col.   Anáhuac,    SAN   NICOLÁS  ", "San Nicolás"],
+      ["SAN PEDRO GARZA GARCÍA", "San Pedro"],
+    ])("%s -> %s", (lugar, esperado) => {
+      expect(infoEntrega(lugar).municipio).toBe(esperado);
+    });
+  });
 });
