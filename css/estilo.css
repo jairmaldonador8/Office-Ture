@@ -879,3 +879,8 @@ body.catalogo em{color:var(--verde);font-style:normal;font-weight:inherit}
   .rev-datos{grid-template-columns:2fr 1fr 1fr 1fr}
 }
 @media (prefers-reduced-motion:reduce){.rev-prod figure img,.btn-contorno i{transition:none}}
+
+/* ---------- fotos de producto recortadas (15-oct-2026) ----------
+   Las imágenes img/prod-*.webp ya traen su propia sombra de piso, suave y transparente;
+   una sombra CSS encima la duplica y marca una orilla clara alrededor. */
+img[src^="img/prod-"]:not([src*="prod-silla"]){filter:none!important}
