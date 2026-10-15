@@ -1,4 +1,12 @@
-import type { EventoCanal, MensajeEntrante, ReferenciaAnuncio } from "./tipos.js";
+import type {
+  Enviador,
+  ErrorGraph,
+  EventoCanal,
+  MediaDescargada,
+  MensajeEntrante,
+  ReferenciaAnuncio,
+} from "./tipos.js";
+import { ErrorMeta, TIEMPO_LIMITE_ARCHIVO_MS, TIEMPO_LIMITE_MS } from "./tipos.js";
 
 interface IgReferral {
   ad_id?: string;
@@ -101,4 +109,101 @@ export function parsearInstagram(payload: unknown, igUserId: string): EventoCana
     }
   }
   return eventos;
+}
+
+export interface OpcionesInstagram {
+  pageToken: string;
+  version: string;
+  fetch?: typeof fetch;
+}
+
+/** Recorta a un máximo de bytes UTF-8 sin partir caracteres (ni pares sustitutos). */
+export function recortarBytes(texto: string, max: number): string {
+  if (Buffer.byteLength(texto) <= max) return texto;
+  const letras = Array.from(texto);
+  while (letras.length && Buffer.byteLength(letras.join("")) > max - 3) letras.pop();
+  return `${letras.join("")}...`;
+}
+
+export class ClienteInstagram implements Enviador {
+  private readonly f: typeof fetch;
+  private readonly base: string;
+
+  constructor(private readonly o: OpcionesInstagram) {
+    this.f = o.fetch ?? fetch;
+    this.base = `https://graph.facebook.com/${o.version}`;
+  }
+
+  private auth() {
+    return { Authorization: `Bearer ${this.o.pageToken}` };
+  }
+
+  private async enviar(cuerpo: object): Promise<string> {
+    const r = await this.f(`${this.base}/me/messages`, {
+      method: "POST",
+      headers: { ...this.auth(), "Content-Type": "application/json" },
+      body: JSON.stringify(cuerpo),
+      signal: AbortSignal.timeout(TIEMPO_LIMITE_MS),
+    });
+    const datos = (await r.json().catch(() => ({}))) as ErrorGraph & { message_id?: string };
+    if (!r.ok || datos.error) {
+      const e = datos.error;
+      throw new ErrorMeta("instagram", r.status, e?.code, e?.error_subcode, e?.message);
+    }
+    return datos.message_id ?? "";
+  }
+
+  texto(para: string, texto: string) {
+    return this.enviar({
+      recipient: { id: para },
+      messaging_type: "RESPONSE",
+      message: { text: recortarBytes(texto, 1000) },
+    });
+  }
+
+  imagen(para: string, url: string) {
+    return this.enviar({
+      recipient: { id: para },
+      messaging_type: "RESPONSE",
+      message: { attachment: { type: "image", payload: { url, is_reusable: false } } },
+    });
+  }
+
+  async escribiendo(para: string) {
+    for (const accion of ["mark_seen", "typing_on"]) {
+      try {
+        await this.enviar({ recipient: { id: para }, sender_action: accion });
+      } catch {
+        // Cosmético.
+      }
+    }
+  }
+
+  async plantilla(_para: string, _nombre: string, _variables: string[]): Promise<string> {
+    throw new Error("Instagram no tiene plantillas: fuera de la ventana de 24 h no se puede escribir");
+  }
+
+  async descargarMedia(ref: { mediaId?: string; mediaUrl?: string }): Promise<MediaDescargada> {
+    if (!ref.mediaUrl) throw new Error("Instagram necesita mediaUrl");
+    const r = await this.f(ref.mediaUrl, { signal: AbortSignal.timeout(TIEMPO_LIMITE_ARCHIVO_MS) });
+    if (!r.ok) throw new Error(`No se pudo bajar el adjunto: ${r.status}`);
+    return {
+      bytes: new Uint8Array(await r.arrayBuffer()),
+      mime: r.headers.get("content-type") ?? "application/octet-stream",
+    };
+  }
+
+  async perfil(igsid: string): Promise<{ nombre?: string; usuario?: string }> {
+    try {
+      const r = await this.f(`${this.base}/${encodeURIComponent(igsid)}?fields=name,username`, {
+        headers: this.auth(),
+        signal: AbortSignal.timeout(TIEMPO_LIMITE_MS),
+      });
+      if (!r.ok) return {};
+      const d = (await r.json()) as { name?: string; username?: string };
+      return { ...(d.name ? { nombre: d.name } : {}), ...(d.username ? { usuario: d.username } : {}) };
+    } catch {
+      return {};
+    }
+  }
 }

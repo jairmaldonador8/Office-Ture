@@ -1,4 +1,12 @@
-import type { EventoCanal, MensajeEntrante, ReferenciaAnuncio } from "./tipos.js";
+import type {
+  Enviador,
+  ErrorGraph,
+  EventoCanal,
+  MediaDescargada,
+  MensajeEntrante,
+  ReferenciaAnuncio,
+} from "./tipos.js";
+import { ErrorMeta, TIEMPO_LIMITE_ARCHIVO_MS, TIEMPO_LIMITE_MS } from "./tipos.js";
 
 interface WaMensaje {
   from: string;
@@ -126,4 +134,116 @@ export function parsearWhatsApp(payload: unknown): EventoCanal[] {
     }
   }
   return eventos;
+}
+
+export interface OpcionesWhatsApp {
+  phoneNumberId: string;
+  token: string;
+  version: string;
+  fetch?: typeof fetch;
+}
+
+export class ClienteWhatsApp implements Enviador {
+  private readonly f: typeof fetch;
+  private readonly base: string;
+
+  constructor(private readonly o: OpcionesWhatsApp) {
+    this.f = o.fetch ?? fetch;
+    this.base = `https://graph.facebook.com/${o.version}`;
+  }
+
+  private auth() {
+    return { Authorization: `Bearer ${this.o.token}` };
+  }
+
+  private async post(ruta: string, cuerpo: object): Promise<{ messages?: { id: string }[] }> {
+    const r = await this.f(`${this.base}/${ruta}`, {
+      method: "POST",
+      headers: { ...this.auth(), "Content-Type": "application/json" },
+      body: JSON.stringify(cuerpo),
+      signal: AbortSignal.timeout(TIEMPO_LIMITE_MS),
+    });
+    const datos = (await r.json().catch(() => ({}))) as ErrorGraph & { messages?: { id: string }[] };
+    if (!r.ok || datos.error) {
+      const e = datos.error;
+      throw new ErrorMeta("whatsapp", r.status, e?.code, e?.error_subcode, e?.message);
+    }
+    return datos;
+  }
+
+  private async enviar(para: string, contenido: object): Promise<string> {
+    const r = await this.post(`${this.o.phoneNumberId}/messages`, {
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: para,
+      ...contenido,
+    });
+    return r.messages?.[0]?.id ?? "";
+  }
+
+  texto(para: string, texto: string) {
+    return this.enviar(para, { type: "text", text: { body: texto, preview_url: false } });
+  }
+
+  async imagen(para: string, url: string, pie?: string) {
+    const origen = await this.f(url, { signal: AbortSignal.timeout(TIEMPO_LIMITE_ARCHIVO_MS) });
+    if (!origen.ok) throw new Error(`No se pudo bajar la foto ${url}: ${origen.status}`);
+    const mime = origen.headers.get("content-type") ?? "image/jpeg";
+    const form = new FormData();
+    form.set("messaging_product", "whatsapp");
+    form.set("type", mime);
+    form.set("file", new Blob([await origen.arrayBuffer()], { type: mime }), "foto");
+    const subida = await this.f(`${this.base}/${this.o.phoneNumberId}/media`, {
+      method: "POST",
+      headers: this.auth(),
+      body: form,
+      signal: AbortSignal.timeout(TIEMPO_LIMITE_ARCHIVO_MS),
+    });
+    const { id } = (await subida.json().catch(() => ({}))) as { id?: string };
+    if (!subida.ok || !id) throw new Error(`No se pudo subir la foto: ${subida.status}`);
+    return this.enviar(para, { type: "image", image: pie ? { id, caption: pie } : { id } });
+  }
+
+  async escribiendo(_para: string, idMensajeCliente?: string) {
+    if (!idMensajeCliente) return;
+    try {
+      await this.post(`${this.o.phoneNumberId}/messages`, {
+        messaging_product: "whatsapp",
+        status: "read",
+        message_id: idMensajeCliente,
+        typing_indicator: { type: "text" },
+      });
+    } catch {
+      // El indicador es cosmético: nunca debe tumbar el turno.
+    }
+  }
+
+  plantilla(para: string, nombre: string, variables: string[]) {
+    return this.enviar(para, {
+      type: "template",
+      template: {
+        name: nombre,
+        language: { code: "es_MX" },
+        components: variables.length
+          ? [{ type: "body", parameters: variables.map((text) => ({ type: "text", text })) }]
+          : [],
+      },
+    });
+  }
+
+  async descargarMedia(ref: { mediaId?: string; mediaUrl?: string }): Promise<MediaDescargada> {
+    if (!ref.mediaId) throw new Error("WhatsApp necesita mediaId");
+    const info = await this.f(`${this.base}/${ref.mediaId}`, {
+      headers: this.auth(),
+      signal: AbortSignal.timeout(TIEMPO_LIMITE_MS),
+    });
+    const { url, mime_type } = (await info.json().catch(() => ({}))) as { url?: string; mime_type?: string };
+    if (!info.ok || !url) throw new Error(`Media ${ref.mediaId} no disponible: ${info.status}`);
+    const bin = await this.f(url, {
+      headers: this.auth(),
+      signal: AbortSignal.timeout(TIEMPO_LIMITE_ARCHIVO_MS),
+    });
+    if (!bin.ok) throw new Error(`No se pudo bajar media ${ref.mediaId}: ${bin.status}`);
+    return { bytes: new Uint8Array(await bin.arrayBuffer()), mime: mime_type ?? "application/octet-stream" };
+  }
 }
