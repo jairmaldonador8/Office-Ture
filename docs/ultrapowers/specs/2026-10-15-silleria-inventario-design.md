@@ -1,5 +1,7 @@
 # Sillería en la página de inventario
 
+> **Superado el mismo día.** Jair descartó la rejilla dentro de inventario; la sillería vive ahora en `catalogo.html`. Ver `2026-10-15-catalogo-design.md`. Se conservan las piezas, los textos y las imágenes `img/silla-*.webp`.
+
 Fecha: 15-oct-2026. Aprobado por Jair en la sesión.
 
 ## Contexto

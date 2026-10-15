@@ -335,18 +335,19 @@
   }
 })();
 
-/* ---- sillería: filtros por grupo (inventario.html) ---- */
+/* ---- catálogo: resalta el capítulo visible en la barra pegajosa (catalogo.html) ---- */
 (function () {
   'use strict';
-  var filtros = document.querySelector('.filtros');
-  if (!filtros) return;
-  var botones = filtros.querySelectorAll('button');
-  var sillas = document.querySelectorAll('.sillas .silla');
-  botones.forEach(function (b) {
-    b.addEventListener('click', function () {
-      var grupo = b.dataset.grupo;
-      botones.forEach(function (o) { o.setAttribute('aria-pressed', o === b ? 'true' : 'false'); });
-      sillas.forEach(function (s) { s.hidden = grupo !== 'todas' && s.dataset.grupo !== grupo; });
-    });
-  });
+  var nav = document.getElementById('ctl-nav');
+  if (!nav || !('IntersectionObserver' in window)) return;
+  var enlaces = Array.prototype.slice.call(nav.querySelectorAll('a[href^="#"]'));
+  var caps = enlaces.map(function (a) { return document.querySelector(a.getAttribute('href')); }).filter(Boolean);
+  var visibles = {};
+  var io = new IntersectionObserver(function (entradas) {
+    entradas.forEach(function (en) { visibles[en.target.id] = en.isIntersecting; });
+    var actual = caps.filter(function (c) { return visibles[c.id]; })[0];
+    if (!actual) return;
+    enlaces.forEach(function (a) { a.classList.toggle('activa', a.getAttribute('href') === '#' + actual.id); });
+  }, { rootMargin: '-35% 0px -55% 0px' });
+  caps.forEach(function (c) { io.observe(c); });
 })();
