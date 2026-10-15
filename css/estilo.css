@@ -604,6 +604,138 @@ body.interna .hamburguesa span{background:var(--tinta)}
 @media (min-width:760px){.pagina-cabeza{padding:170px 0 48px}.pagina-contenido{padding:32px 0 60px}}
 
 .show-enlace{margin-top:14px;align-self:flex-start}
+/* ---------- páginas de línea (inventario, equipa): lenguaje editorial del catálogo, paleta del sitio ---------- */
+body.linea{--panel-beige:#e9e1d2;--panel-sage:#dde3d0;--panel-marfil:#fbf9f4}
+.ln-hero{padding:124px 0 36px}
+.ln-hero-rejilla{display:grid;gap:36px}
+.ln-hero-texto{display:grid;gap:22px;align-content:center;justify-items:start}
+.ln-hero-texto .ceja{margin-bottom:0}
+.ln-hero-texto h1{font-size:clamp(44px,7vw,92px);font-weight:600;letter-spacing:-.045em;line-height:.98}
+.ln-hero-texto .bajada{margin:0}
+.ln-promesas{display:flex;flex-wrap:wrap;gap:14px 32px;padding-top:20px;border-top:1px solid var(--tinta);width:100%;margin-top:4px}
+.ln-promesas li{display:grid;gap:3px}
+.ln-promesas b{font-weight:600;font-size:clamp(26px,3vw,38px);letter-spacing:-.04em;line-height:1;color:var(--tinta);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ln-promesas span{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;font-weight:500;color:var(--tenue)}
+.ln-hero-acciones{display:flex;flex-wrap:wrap;align-items:center;gap:16px 28px}
+/* panel de portada con el producto flotando */
+.ln-hero-panel{position:relative;margin:0;display:grid;padding:70px 24px 26px;border-radius:22px 22px 110px 22px;overflow:hidden;isolation:isolate;min-height:380px;align-content:end}
+.ln-hero-panel.beige{background:var(--panel-beige)}
+.ln-hero-panel.sage{background:var(--panel-sage)}
+.ln-mancha{position:absolute;border-radius:50%;background:rgba(255,255,255,.42);width:280px;height:280px;right:-120px;bottom:-140px;z-index:0;pointer-events:none}
+.ln-hero-panel img{position:relative;z-index:1;width:min(80%,440px);height:auto;justify-self:center;margin:0 auto 12px;filter:drop-shadow(0 34px 28px rgba(31,36,27,.25))}
+.ln-hero-panel figcaption{position:relative;z-index:1;display:grid;gap:2px;color:var(--tinta)}
+.ln-hero-panel figcaption small{font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;font-weight:500;color:var(--texto)}
+.ln-hero-panel figcaption b{font-size:18px;font-weight:600;letter-spacing:-.02em}
+.ln-hero-panel figcaption span{font-size:12.5px;color:var(--texto)}
+.ln-marca{position:absolute;right:22px;top:20px;width:40px;height:40px;fill:rgba(31,36,27,.16);z-index:1}
+.ln-etiqueta{position:absolute;left:24px;top:22px;z-index:1;font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:500;background:var(--tinta);color:var(--marfil);padding:7px 12px;border-radius:999px}
+/* índice de capítulos */
+.ln-indice{border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);margin-top:20px}
+.ln-indice ol{display:flex;gap:0 26px;overflow-x:auto;scrollbar-width:none;padding:14px 0}
+.ln-indice ol::-webkit-scrollbar{display:none}
+.ln-indice a{display:flex;align-items:baseline;gap:8px;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;font-weight:500;color:var(--tenue);white-space:nowrap;transition:color .2s ease}
+.ln-indice a b{font-weight:600;color:var(--madera);font-variant-numeric:tabular-nums}
+.ln-indice a:hover{color:var(--tinta)}
+/* cabeza de capítulo */
+.ln-capitulo-cabeza{display:grid;gap:14px;margin:0 auto 36px}
+.ln-capitulo-cabeza .ceja{margin:0}
+.ln-capitulo-cabeza h2{font-weight:600;letter-spacing:-.04em;font-size:clamp(32px,4.4vw,56px);line-height:1}
+.ln-capitulo-cabeza p:not(.ceja){font-size:15.5px;max-width:50ch}
+/* la vitrina del inventario, sobre panel cálido */
+body.linea .show-stage.blanca{background:radial-gradient(70% 70% at 50% 58%,#fff,var(--panel-beige));border-radius:22px 22px 110px 22px}
+body.linea .show-stage img.contiene{filter:drop-shadow(0 34px 28px rgba(31,36,27,.2))}
+body.linea .show-foto.blanca{background:radial-gradient(70% 70% at 50% 58%,#fff,var(--panel-beige));border-radius:22px 22px 70px 22px}
+body.linea .show-foto.blanca img{filter:drop-shadow(0 24px 20px rgba(31,36,27,.18))}
+body.linea .pagina-contenido{padding-top:56px}
+/* zonas de un proyecto (equipa) */
+.ln-zonas{padding:64px 0 16px}
+.ln-zonas-rejilla{display:grid;gap:14px}
+.ln-zona{position:relative;display:grid;gap:4px;align-content:end;padding:22px 22px 24px;border-radius:22px;overflow:hidden;min-height:300px;isolation:isolate;color:var(--tinta)}
+.ln-zona::after{content:'';position:absolute;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.38);right:-100px;top:-110px;z-index:0;pointer-events:none}
+.ln-zona.beige{background:var(--panel-beige)}
+.ln-zona.sage{background:var(--panel-sage)}
+.ln-zona.marfil{background:var(--panel-marfil);box-shadow:inset 0 0 0 1px var(--linea)}
+.ln-zona.oliva{background:var(--oliva);color:var(--marfil)}
+.ln-zona.oliva::after{background:rgba(239,234,224,.1)}
+.ln-zona:nth-child(1){border-radius:22px 22px 90px 22px}
+.ln-zona:nth-child(2){border-radius:22px 22px 22px 90px}
+.ln-zona:nth-child(3){border-radius:90px 22px 22px 22px}
+.ln-zona:nth-child(4){border-radius:22px 90px 22px 22px}
+.ln-zona img{position:relative;z-index:1;width:min(64%,340px);height:auto;justify-self:center;margin:0 auto 14px;filter:drop-shadow(0 26px 22px rgba(31,36,27,.22))}
+.ln-zona small{position:relative;z-index:1;font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;font-weight:500;color:var(--texto)}
+.ln-zona.oliva small{color:var(--sage-claro)}
+.ln-zona h3{position:relative;z-index:1;font-size:22px;font-weight:600;letter-spacing:-.025em;color:inherit}
+.ln-zona p{position:relative;z-index:1;font-size:13.5px;line-height:1.5;max-width:30ch;color:var(--texto)}
+.ln-zona.oliva p{color:rgba(239,234,224,.78)}
+/* fotos de obra */
+.ln-antes{padding:64px 0 16px}
+.ln-antes-rejilla{display:grid;gap:18px}
+.ln-foto{margin:0;display:grid;gap:12px}
+.ln-foto>div{aspect-ratio:4/3;overflow:hidden;border-radius:18px;background:var(--beige-claro)}
+.ln-foto img{width:100%;height:100%;object-fit:cover;filter:var(--foto);transition:transform 1.2s var(--suave)}
+.ln-foto:hover img{transform:scale(1.03)}
+.ln-foto figcaption{display:grid;gap:2px;padding-top:12px;border-top:1px solid var(--linea)}
+.ln-foto figcaption b{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;font-weight:500;color:var(--sage)}
+.ln-foto figcaption span{font-size:14px;color:var(--tinta)}
+/* pasos */
+.ln-pasos{padding:64px 0 16px}
+.ln-pasos-rejilla{display:grid;border-top:1px solid var(--tinta)}
+.ln-paso{display:grid;grid-template-columns:56px 1fr;column-gap:16px;padding:24px 0;border-bottom:1px solid var(--linea)}
+.ln-paso b{font-weight:600;font-size:34px;letter-spacing:-.05em;line-height:.9;color:var(--madera);grid-row:span 2;font-variant-numeric:tabular-nums}
+.ln-paso h3{font-size:19px;font-weight:600;letter-spacing:-.02em;margin-bottom:6px}
+.ln-paso p{font-size:14px;max-width:34ch}
+/* paneles cruzados entre páginas */
+.ln-cruce{padding:48px 0 0}
+.ln-cruce-rejilla{display:grid;gap:14px}
+.ln-panel{position:relative;display:grid;grid-template-columns:1fr auto;align-items:end;gap:14px;padding:26px 22px 24px;border-radius:22px;overflow:hidden;isolation:isolate;min-height:230px;color:var(--tinta)}
+.ln-panel::after{content:'';position:absolute;width:240px;height:240px;border-radius:50%;background:rgba(255,255,255,.38);right:-120px;bottom:-140px;z-index:0;pointer-events:none}
+.ln-panel.sage{background:var(--panel-sage);border-radius:22px 22px 90px 22px}
+.ln-panel.beige{background:var(--panel-beige);border-radius:22px 22px 90px 22px}
+.ln-panel.oliva{background:var(--oliva);color:var(--marfil);border-radius:22px 22px 22px 90px}
+.ln-panel.oliva::after{background:rgba(239,234,224,.1)}
+.ln-panel>div{position:relative;z-index:1;display:grid;gap:12px;align-content:end;justify-items:start}
+.ln-panel .ceja{margin:0}
+.ln-panel.oliva .ceja{color:var(--sage-claro)}
+.ln-panel h3{font-size:clamp(20px,2.2vw,26px);font-weight:600;letter-spacing:-.03em;color:inherit;max-width:22ch}
+.ln-panel img{position:relative;z-index:1;width:min(36vw,200px);height:auto;filter:drop-shadow(0 24px 20px rgba(31,36,27,.25));transition:transform .6s var(--suave)}
+.ln-panel:hover img{transform:translateY(-6px)}
+.ln-panel .btn-contorno{margin-top:4px}
+.ln-panel.oliva .btn-contorno{border-color:rgba(239,234,224,.6);color:var(--marfil)}
+.ln-panel.oliva .btn-contorno:hover{background:var(--marfil);color:var(--tinta)}
+.ln-panel:hover .btn-contorno i{transform:translateX(4px)}
+/* cierre */
+body.linea .pagina-cta{padding-top:56px}
+body.linea .proceso-cta{border-radius:22px 22px 110px 22px;position:relative;overflow:hidden;isolation:isolate}
+body.linea .proceso-cta::after{content:'';position:absolute;width:320px;height:320px;border-radius:50%;background:rgba(239,234,224,.08);right:-130px;bottom:-170px;z-index:-1}
+@media (min-width:560px){
+  .ln-zonas-rejilla{grid-template-columns:1fr 1fr}
+  .ln-antes-rejilla{grid-template-columns:repeat(3,1fr)}
+  .ln-cruce-rejilla{grid-template-columns:1fr 1fr}
+}
+@media (min-width:760px){
+  .ln-hero{padding:170px 0 56px}
+  .ln-hero-rejilla{grid-template-columns:7fr 5fr;gap:48px;align-items:center}
+  .ln-hero-panel{min-height:500px;padding:80px 34px 32px}
+  .ln-indice ol{padding:18px 0;gap:0 34px}
+  .ln-capitulo-cabeza{grid-template-columns:auto 1fr;column-gap:48px;align-items:end;margin-bottom:48px}
+  .ln-capitulo-cabeza .ceja{grid-column:1/-1}
+  .ln-capitulo-cabeza p:not(.ceja){padding-bottom:6px}
+  .ln-pasos-rejilla{grid-template-columns:repeat(var(--n,3),1fr);gap:0 28px;border-top:0}
+  .ln-paso{grid-template-columns:1fr;padding:26px 0 34px;border-bottom:0;border-top:1px solid var(--tinta)}
+  .ln-paso b{grid-row:auto;font-size:44px;margin-bottom:26px}
+  .ln-zonas,.ln-antes,.ln-pasos{padding:96px 0 16px}
+  body.linea .pagina-contenido{padding-top:96px}
+  .ln-zona{min-height:380px;padding:28px 28px 30px}
+  .ln-zona img{width:min(84%,340px)}
+}
+@media (min-width:1000px){
+  .ln-hero-rejilla{grid-template-columns:6fr 6fr;gap:64px}
+  .ln-hero-panel{min-height:580px}
+  .ln-zonas-rejilla{grid-template-columns:repeat(4,1fr);gap:18px}
+  .ln-zona{min-height:430px}
+  .ln-panel{padding:36px 36px 34px;min-height:280px}
+}
+
 /* ---------- catálogo revista (catalogo.html) · paleta del cliente: menta, azul cielo, blanco y negro ---------- */
 body.catalogo{
   --menta:#a0ccc7;--menta-2:#d2e8e4;--azul:#92b1e7;--azul-2:#cddcf5;--verde:#3f9284;--gris:#f1f0ec;--papel:#fff;

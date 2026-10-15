@@ -159,6 +159,22 @@
     items.forEach(function (it) { ioShow.observe(it); });
   }
 
+  /* índice de capítulos (inventario): lleva a la pieza en la vitrina */
+  document.querySelectorAll('[data-ir]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      var item = document.querySelector('.show-item[data-key="' + a.dataset.ir + '"]');
+      if (!item || !lista) return;
+      e.preventDefault();
+      if (esEscritorio.matches) {
+        item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        lista.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        lista.scrollTo({ left: item.offsetLeft - lista.offsetLeft, behavior: 'smooth' });
+      }
+      activarItem(item);
+    });
+  });
+
   if (lista) {
     var tScroll;
     lista.addEventListener('scroll', function () {
