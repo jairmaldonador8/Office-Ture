@@ -147,6 +147,9 @@ const seguimiento = (r: Fila): Seguimiento =>
     cancelado: r.cancelado,
   });
 
+/** Nombres de usuario que Instagram permite; `*` es comodín de PostgREST y no se confía en escapar. */
+const USUARIO_IG = /^[A-Za-z0-9._]+$/;
+
 /** Escapa los comodines de LIKE para comparar texto literal. */
 const literalLike = (t: string): string => t.replace(/[\\%_]/g, (c) => `\\${c}`);
 
@@ -265,6 +268,7 @@ export class RepoSupabase implements Repo {
     const usuario = ref.startsWith("@") ? ref.slice(1) : undefined;
     const d = ultimos10(ref);
     if (usuario === "" || (usuario === undefined && d.length < 10)) return null;
+    if (usuario !== undefined && !USUARIO_IG.test(usuario)) return null;
     let consulta = this.db.from("contactos").select("id, telefono, id_externo").order("creado");
     if (usuario !== undefined) consulta = consulta.ilike("usuario", literalLike(usuario));
     else consulta = consulta.or(`telefono.like.*${d},id_externo.like.*${d}`);
@@ -286,7 +290,17 @@ export class RepoSupabase implements Repo {
       id_externo: m.idExterno ?? null,
       ...(m.creado ? { creado: m.creado.toISOString() } : {}),
     };
-    return mensaje(unaFila(await this.db.from("mensajes").insert(fila).select().single(), "guardarMensaje"));
+    const r = await this.db.from("mensajes").insert(fila).select().single();
+    // 23505: el id externo ya estaba guardado (el eco o un reintento ganó la carrera).
+    if (r.error?.code === "23505" && m.idExterno) {
+      return mensaje(
+        unaFila(
+          await this.db.from("mensajes").select("*").eq("id_externo", m.idExterno).single(),
+          "guardarMensaje",
+        ),
+      );
+    }
+    return mensaje(unaFila(r, "guardarMensaje"));
   }
   async existeMensajeExterno(idExterno: string) {
     const r = await this.db
@@ -479,7 +493,8 @@ export class RepoSupabase implements Repo {
         .select("*")
         .eq("diferida", true)
         .is("atendida_en", null)
-        .gte("enviada_en", d),
+        .gte("enviada_en", d)
+        .order("enviada_en"),
       "resumen",
     ) as Fila[];
     const sinAtender = await this.db
@@ -519,7 +534,7 @@ export class RepoSupabase implements Repo {
 
   /** Métrica de uso: si falla no debe tumbar la respuesta al cliente, así que el error se ignora. */
   async registrarLlamadaModelo(l: LlamadaModelo) {
-    await this.db.from("llamadas_modelo").insert({
+    const r = await this.db.from("llamadas_modelo").insert({
       conversacion_id: l.conversacionId,
       modelo: l.modelo,
       tokens_entrada: l.tokensEntrada,
@@ -529,6 +544,7 @@ export class RepoSupabase implements Repo {
       latencia_ms: l.latenciaMs,
       error: l.error ?? null,
     });
+    if (r.error) console.warn(`Supabase (registrarLlamadaModelo): ${r.error.message}`);
   }
   async leerMarca(clave: string) {
     const f = ok(await this.db.from("marcas").select("valor").eq("clave", clave).maybeSingle(), "leerMarca");

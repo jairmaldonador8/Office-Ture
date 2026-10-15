@@ -34,6 +34,66 @@ describe("RepoMemoria", () => {
     expect(await repo.tomarTurnos(t1, 10)).toEqual([conv.id]);
   });
 
+  it("tomarTurnos reintenta un turno caído solo después de 3 minutos", async () => {
+    const { repo, conv } = await conConversacion();
+    const t0 = new Date("2026-10-09T16:00:00Z");
+    await repo.actualizarConversacion(conv.id, { responderEn: t0 });
+    expect(await repo.tomarTurnos(t0, 10)).toEqual([conv.id]);
+    expect(await repo.tomarTurnos(new Date(t0.getTime() + 179_000), 10)).toEqual([]);
+    expect(await repo.tomarTurnos(new Date(t0.getTime() + 181_000), 10)).toEqual([conv.id]);
+  });
+
+  it("tomarTurnos con bloqueo vencido retoma aunque haya nuevo responderEn", async () => {
+    const { repo, conv } = await conConversacion();
+    const t0 = new Date("2026-10-09T16:00:00Z");
+    await repo.actualizarConversacion(conv.id, { responderEn: t0 });
+    await repo.tomarTurnos(t0, 10);
+    const t1 = new Date(t0.getTime() + 181_000);
+    await repo.actualizarConversacion(conv.id, { responderEn: t1 });
+    expect(await repo.tomarTurnos(t1, 10)).toEqual([conv.id]);
+  });
+
+  it("tomarTurnos actualiza el campo actualizado de la conversación", async () => {
+    const { repo, conv } = await conConversacion();
+    const t0 = new Date("2026-10-09T16:00:00Z");
+    repo.reloj = () => new Date("2026-10-09T17:00:00Z");
+    await repo.actualizarConversacion(conv.id, { responderEn: t0 });
+    repo.reloj = () => new Date("2026-10-09T18:00:00Z");
+    await repo.tomarTurnos(t0, 10);
+    expect(repo.actualizado.get(conv.id)).toEqual(new Date("2026-10-09T18:00:00Z"));
+  });
+
+  it("tomarSeguimientos reintenta uno tomado solo después de 5 minutos", async () => {
+    const { repo, conv } = await conConversacion();
+    await repo.programarSeguimiento({
+      conversacionId: conv.id,
+      tipo: "toque1",
+      programadoPara: new Date(1000),
+      usarPlantilla: false,
+    });
+    expect(await repo.tomarSeguimientos(new Date(2000), 10)).toHaveLength(1);
+    expect(await repo.tomarSeguimientos(new Date(2000 + 299_000), 10)).toEqual([]);
+    expect(await repo.tomarSeguimientos(new Date(2000 + 301_000), 10)).toHaveLength(1);
+  });
+
+  it("guardarMensaje es idempotente por idExterno", async () => {
+    const { repo, conv } = await conConversacion();
+    const base = { conversacionId: conv.id, hilo: 1, autor: "bot", tipo: "texto", texto: "hola" } as const;
+    const a = await repo.guardarMensaje({ ...base, idExterno: "wamid.1" });
+    const b = await repo.guardarMensaje({ ...base, texto: "otro", idExterno: "wamid.1" });
+    expect(b.id).toBe(a.id);
+    expect(repo.mensajes).toHaveLength(1);
+    await repo.guardarMensaje(base);
+    await repo.guardarMensaje(base);
+    expect(repo.mensajes).toHaveLength(3);
+  });
+
+  it("conversacionPorReferencia rechaza usuarios con caracteres no válidos", async () => {
+    const { repo } = await conConversacion();
+    expect(await repo.conversacionPorReferencia("@a*")).toBeNull();
+    expect(await repo.conversacionPorReferencia("@a b")).toBeNull();
+  });
+
   it("lead vacío por defecto y actualización parcial", async () => {
     const { repo, conv } = await conConversacion();
     expect(await repo.obtenerLead(conv.id)).toMatchObject({ prioritario: false, avisoEnviado: false });

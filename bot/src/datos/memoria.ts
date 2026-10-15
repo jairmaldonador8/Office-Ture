@@ -26,6 +26,11 @@ function aplicar<T extends object>(obj: T, cambios: Partial<T>): void {
   }
 }
 
+const USUARIO_IG = /^[a-z0-9._]+$/;
+/** Mismos vencimientos que tomar_turnos y tomar_seguimientos en el esquema. */
+const VENCE_TURNO_MS = 3 * 60_000;
+const VENCE_SEGUIMIENTO_MS = 5 * 60_000;
+
 export class RepoMemoria implements Repo {
   eventos = new Map<
     string,
@@ -33,11 +38,12 @@ export class RepoMemoria implements Repo {
   >();
   contactos = new Map<string, Contacto>();
   conversaciones = new Map<string, Conversacion>();
-  enProceso = new Set<string>();
+  /** Conversación -> cuándo se tomó su turno (`en_proceso_desde`). */
+  enProceso = new Map<string, Date>();
   mensajes: Mensaje[] = [];
   leads = new Map<string, Lead>();
   productos = new Map<string, Producto>();
-  seguimientos: (Seguimiento & { tomado?: boolean })[] = [];
+  seguimientos: (Seguimiento & { tomado?: Date })[] = [];
   alertas: Alerta[] = [];
   ventanas = new Map<string, Date>();
   llamadas: LlamadaModelo[] = [];
@@ -119,6 +125,7 @@ export class RepoMemoria implements Repo {
   }
   async conversacionPorReferencia(ref: string) {
     const usuario = ref.startsWith("@") ? ref.slice(1).toLowerCase() : undefined;
+    if (usuario !== undefined && !USUARIO_IG.test(usuario)) return null;
     const digitos = ultimos10(ref);
     if (usuario === "" || (usuario === undefined && digitos.length < 10)) return null;
     const contacto = [...this.contactos.values()].find((c) =>
@@ -130,6 +137,11 @@ export class RepoMemoria implements Repo {
   }
 
   async guardarMensaje(m: NuevoMensaje) {
+    // Igual que el unique de mensajes.id_externo: un id externo repetido ya está guardado.
+    if (m.idExterno !== undefined) {
+      const previo = this.mensajes.find((x) => x.idExterno === m.idExterno);
+      if (previo) return { ...previo };
+    }
     const nuevo: Mensaje = { ...m, id: randomUUID(), creado: m.creado ?? this.reloj() };
     this.mensajes.push(nuevo);
     return { ...nuevo };
@@ -185,15 +197,23 @@ export class RepoMemoria implements Repo {
   }
 
   async tomarTurnos(ahora: Date, limite: number) {
-    const vencidas = [...this.conversaciones.values()]
-      .filter((c) => c.responderEn && c.responderEn <= ahora && !this.enProceso.has(c.id))
-      .sort((a, b) => (a.responderEn as Date).getTime() - (b.responderEn as Date).getTime())
+    const vencido = (id: string) => {
+      const desde = this.enProceso.get(id);
+      return desde === undefined || desde.getTime() < ahora.getTime() - VENCE_TURNO_MS;
+    };
+    const clave = (c: Conversacion) => (c.responderEn ?? (this.enProceso.get(c.id) as Date)).getTime();
+    const candidatas = [...this.conversaciones.values()]
+      .filter((c) =>
+        c.responderEn ? c.responderEn <= ahora && vencido(c.id) : this.enProceso.has(c.id) && vencido(c.id),
+      )
+      .sort((a, b) => clave(a) - clave(b))
       .slice(0, limite);
-    for (const c of vencidas) {
-      this.enProceso.add(c.id);
+    for (const c of candidatas) {
+      this.enProceso.set(c.id, ahora);
       delete c.responderEn;
+      this.actualizado.set(c.id, this.reloj());
     }
-    return vencidas.map((c) => c.id);
+    return candidatas.map((c) => c.id);
   }
   async liberarTurno(id: string) {
     this.enProceso.delete(id);
@@ -208,10 +228,16 @@ export class RepoMemoria implements Repo {
   }
   async tomarSeguimientos(ahora: Date, limite: number) {
     const listos = this.seguimientos
-      .filter((s) => !s.enviadoEn && !s.cancelado && !s.tomado && s.programadoPara <= ahora)
+      .filter(
+        (s) =>
+          !s.enviadoEn &&
+          !s.cancelado &&
+          (!s.tomado || s.tomado.getTime() < ahora.getTime() - VENCE_SEGUIMIENTO_MS) &&
+          s.programadoPara <= ahora,
+      )
       .sort((a, b) => a.programadoPara.getTime() - b.programadoPara.getTime())
       .slice(0, limite);
-    for (const s of listos) s.tomado = true;
+    for (const s of listos) s.tomado = ahora;
     return listos.map(({ tomado: _, ...s }) => ({ ...s }));
   }
   async marcarSeguimientoEnviado(id: string, cuando: Date) {
