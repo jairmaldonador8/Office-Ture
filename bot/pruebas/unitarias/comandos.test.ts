@@ -31,4 +31,40 @@ describe("parsearComando", () => {
     expect(parsearComando("/ayuda")).toEqual({ tipo: "ayuda" });
     expect(parsearComando("/hola")).toEqual({ tipo: "desconocido" });
   });
+  it("teléfonos válidos en varios formatos", () => {
+    for (const t of ["8112345678", "+52 1 81 1234 5678", "+5218112345678", "81 1234 5678", "81-1234-5678"]) {
+      expect(parsearComando(`/bot ${t}`)).toEqual({ tipo: "bot", ref: "8112345678" });
+    }
+  });
+  it("teléfono mal escrito es desconocido, no usa la alerta citada", () => {
+    for (const t of [
+      "123456",
+      "81123",
+      "123456789",
+      "1234567",
+      "811234567",
+      "81123456789",
+      "+52 81 1234 567",
+    ]) {
+      for (const c of ["bot", "pausa", "ganado", "perdido"]) {
+        if (c === "perdido" && t.replace(/\D/g, "").length < 7) continue; // texto libre
+
+        expect(parsearComando(`/${c} ${t}`)).toEqual({ tipo: "desconocido" });
+      }
+    }
+    expect(parsearComando("/bot 81123456789012")).toEqual({ tipo: "desconocido" });
+  });
+  it("texto libre corto con dígitos sigue siendo motivo", () => {
+    expect(parsearComando("/perdido 3000 precio")).toEqual({ tipo: "perdido", motivo: "3000 precio" });
+    expect(parsearComando("/perdido 8112345678 pidió 3000")).toEqual({
+      tipo: "perdido",
+      ref: "8112345678",
+      motivo: "pidió 3000",
+    });
+  });
+  it("ignora formato de WhatsApp alrededor del mensaje", () => {
+    expect(parsearComando("*/bot 8112345678*")).toEqual({ tipo: "bot", ref: "8112345678" });
+    expect(parsearComando("_/pausa_")).toEqual({ tipo: "pausa" });
+    expect(parsearComando("~*/ganado 81 1234 5678*~")).toEqual({ tipo: "ganado", ref: "8112345678" });
+  });
 });
