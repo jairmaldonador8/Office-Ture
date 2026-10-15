@@ -10,12 +10,60 @@
   var menu = document.getElementById('menu-movil');
   var reducido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ---- barra sólida al bajar ---- */
+  /* ---- selector de propuesta de color (revisión) ---- */
+  var temaBotones = document.querySelectorAll('#tema-sel button');
+  function pintarTema() {
+    var actual = document.documentElement.getAttribute('data-tema') || 'oliva';
+    temaBotones.forEach(function (b) { b.classList.toggle('activa', b.dataset.tema === actual); });
+  }
+  temaBotones.forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (b.dataset.tema === 'azul') document.documentElement.setAttribute('data-tema', 'azul');
+      else document.documentElement.removeAttribute('data-tema');
+      try { localStorage.setItem('ot-tema', b.dataset.tema); } catch (e) {}
+      pintarTema();
+    });
+  });
+  pintarTema();
+
+  /* ---- barra: el sello se encoge con el scroll (--p de 0 a 1) y la barra
+     se vuelve sólida al pasar la portada (o casi de inmediato en interiores) ---- */
+  var hero = document.getElementById('inicio');
+  var TRAMO = 260;           /* píxeles de scroll en los que el logo pasa de grande a chico */
+  var pAnterior = -1;
+  var pendiente = false;
+  function pintarBarra() {
+    pendiente = false;
+    var y = window.scrollY || 0;
+    var p = Math.min(1, Math.max(0, y / TRAMO));
+    if (reducido) p = p > 0.5 ? 1 : 0;
+    p = 1 - (1 - p) * (1 - p);   /* ease-out: se encoge rápido al principio y asienta suave */
+    p = Math.round(p * 1000) / 1000;
+    if (p !== pAnterior) {
+      barra.style.setProperty('--p', p);
+      barra.classList.toggle('compacta', p >= 1);
+      pAnterior = p;
+    }
+    var limite = hero ? hero.offsetHeight - 80 : 24;
+    barra.classList.toggle('solida', y > limite);
+  }
   function alScroll() {
-    barra.classList.toggle('solida', window.scrollY > 24);
+    if (pendiente) return;
+    pendiente = true;
+    window.requestAnimationFrame(pintarBarra);
   }
   window.addEventListener('scroll', alScroll, { passive: true });
-  alScroll();
+  window.addEventListener('resize', alScroll);
+  pintarBarra();
+
+  /* ---- video de portada: si carga, sustituye a las fotos en movimiento ---- */
+  var video = document.getElementById('hero-video');
+  if (video && hero) {
+    var conVideo = function () { hero.classList.add('con-video'); };
+    video.addEventListener('canplay', conVideo);
+    if (video.readyState >= 3) conVideo();
+    video.addEventListener('error', function () { hero.classList.remove('con-video'); }, true);
+  }
 
   /* ---- menú móvil ---- */
   function abrirMenu(si) {
@@ -59,6 +107,14 @@
         if (panel) panel.hidden = !activa;
       });
       if (t.id === 'tab-inmediata') activarItem(itemActivo);
+    });
+  });
+
+  /* enlaces que abren una pestaña concreta del catálogo (p. ej. la tarjeta de portada) */
+  document.querySelectorAll('[data-pestana]').forEach(function (a) {
+    a.addEventListener('click', function () {
+      var t = document.getElementById(a.dataset.pestana);
+      if (t) t.click();
     });
   });
 
