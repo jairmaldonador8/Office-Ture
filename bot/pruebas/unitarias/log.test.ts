@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { enmascarar, enmascararId, errorSeguro } from "./log.js";
+import { enmascarar, enmascararId, errorSeguro } from "../../src/log.js";
 
 describe("enmascarar", () => {
   it("reduce series de 7 o más dígitos a «…» y los últimos 4", () => {
