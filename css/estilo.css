@@ -1,6 +1,6 @@
 /* ============================================================================
    OFFICETURE · SITIO  (rebranding oct-2026)
-   Paleta oliva / sage / beige / marfil / madera. Solo Poppins.
+   Paleta oliva / sage / beige / marfil / madera. Neue Montreal en títulos (la del logotipo), Poppins en texto.
    Diseñado primero para el iPhone (390 px) y luego para escritorio.
    Breakpoints: 560 / 760 / 900 / 1000 px.
    ========================================================================== */
@@ -13,6 +13,15 @@
 @font-face{font-family:'Poppins';font-weight:500;font-style:italic;font-display:swap;src:url(../fonts/Poppins-500i.woff2) format('woff2')}
 @font-face{font-family:'Poppins';font-weight:600;font-style:normal;font-display:swap;src:url(../fonts/Poppins-600.woff2) format('woff2')}
 @font-face{font-family:'Poppins';font-weight:700;font-style:normal;font-display:swap;src:url(../fonts/Poppins-700.woff2) format('woff2')}
+/* Neue Montreal: la tipografía del logotipo, para títulos, subtítulos y cifras grandes */
+@font-face{font-family:'Neue Montreal';font-weight:300;font-style:normal;font-display:swap;src:url(../fonts/NeueMontreal-300.woff2) format('woff2')}
+@font-face{font-family:'Neue Montreal';font-weight:300;font-style:italic;font-display:swap;src:url(../fonts/NeueMontreal-300i.woff2) format('woff2')}
+@font-face{font-family:'Neue Montreal';font-weight:400;font-style:normal;font-display:swap;src:url(../fonts/NeueMontreal-400.woff2) format('woff2')}
+@font-face{font-family:'Neue Montreal';font-weight:400;font-style:italic;font-display:swap;src:url(../fonts/NeueMontreal-400i.woff2) format('woff2')}
+@font-face{font-family:'Neue Montreal';font-weight:500;font-style:normal;font-display:swap;src:url(../fonts/NeueMontreal-500.woff2) format('woff2')}
+@font-face{font-family:'Neue Montreal';font-weight:500;font-style:italic;font-display:swap;src:url(../fonts/NeueMontreal-500i.woff2) format('woff2')}
+@font-face{font-family:'Neue Montreal';font-weight:700;font-style:normal;font-display:swap;src:url(../fonts/NeueMontreal-700.woff2) format('woff2')}
+@font-face{font-family:'Neue Montreal';font-weight:700;font-style:italic;font-display:swap;src:url(../fonts/NeueMontreal-700i.woff2) format('woff2')}
 
 :root{
   --oliva:#2f3a2a;--oliva-2:#3d4a35;--tinta:#1f241b;
@@ -23,6 +32,7 @@
   --texto:#4a4f43;--tenue:#8a8c80;
   --linea:rgba(47,58,42,.14);--linea-clara:rgba(239,234,224,.14);
   --sans:'Poppins','Helvetica Neue',Helvetica,Arial,sans-serif;
+  --titulos:'Neue Montreal','Poppins','Helvetica Neue',Helvetica,Arial,sans-serif;   /* la del logotipo */
   --gutter:clamp(20px,5vw,72px);
   --radio:4px;              /* esquinas casi rectas: lenguaje editorial de hay.com / muuto */
   --fondo:#f4f1ea;          /* una sola superficie clara en todo el sitio */
@@ -884,3 +894,14 @@ body.catalogo em{color:var(--verde);font-style:normal;font-weight:inherit}
    Las imágenes img/prod-*.webp ya traen su propia sombra de piso, suave y transparente;
    una sombra CSS encima la duplica y marca una orilla clara alrededor. */
 img[src^="img/prod-"]:not([src*="prod-silla"]){filter:none!important}
+
+/* ---------- tipografía de títulos: Neue Montreal, la del logotipo (15-oct-2026) ---------- */
+/* Títulos, subtítulos y cifras grandes en Neue Montreal; el texto corrido, las cejas y los botones siguen en Poppins. */
+h1,h2,h3,.bajada,.hero-bajada,.rev-bajada,.rev-panel .sub,.rev-panel .txt,.pie-frase,.proceso-cta p:not(.ceja),.menu-movil nav a,
+.ln-promesas b,.ln-paso b,.pasos .n,.stage-pie b,.espacio-personas output,.marca-tipo b,.rev-edicion b,.rev-precio,.precio,.show-desc,.ln-zona p,.ln-hero-panel figcaption b,.rev-destacado-foto figcaption b,.cifras b{font-family:var(--titulos)}
+h1,h2{letter-spacing:-.03em}
+h3{letter-spacing:-.015em}
+.menu-movil nav a,.show-item h3,.ln-hero-texto h1,.ln-capitulo-cabeza h2,.ln-zona h3,.ln-paso h3,.ln-panel h3,.ln-hero-panel figcaption b,
+.rev-portada h1,.rev-intro h2,.rev-contra h2,.rev-panel h2,.rev-destacado-foto figcaption b{font-weight:500}
+.hero h1{letter-spacing:-.035em}
+.bajada,.hero-bajada,.rev-bajada,.rev-panel .txt,.show-desc,.ln-zona p{font-weight:400;letter-spacing:-.005em}

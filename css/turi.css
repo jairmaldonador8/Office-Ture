@@ -127,3 +127,30 @@ body.con-turi .flotante{display:none}
   .m-escribe i{animation:none;opacity:.6}
   .turi-cuerpo,.turi-lanzador::after,.m-escribe img,.m-turi-grande,.turi-avatar.brinca{animation:none}
 }
+
+/* ---------- teléfono: Turi escondido en la orilla ----------
+   Solo se asoma una parte de Turi por la orilla derecha para no tapar el sitio.
+   Cada tanto sale con un saltito, saluda y se vuelve a esconder.
+   El chat abierto ocupa casi toda la pantalla y se cierra con su propia X. */
+@media (max-width:759px){
+  .turi{--t-x:0px;--t-y:calc(92px + env(safe-area-inset-bottom))}
+  .turi-lanzador{width:76px;height:76px;transform:translateX(50%) rotate(-14deg);transform-origin:50% 100%}
+  .turi-lanzador::after{right:auto;left:14px;top:10px}
+  .turi-lanzador.saluda{animation:turi-asoma 2.6s cubic-bezier(.3,1.2,.5,1)}
+  .turi-lanzador.saluda .turi-cuerpo{animation:turi-mano .5s ease-in-out .7s 3}
+  .turi-nube{right:14px;bottom:calc(var(--t-y) + 84px);max-width:min(230px,calc(100vw - 28px));font-size:13.5px;padding:12px 34px 12px 14px}
+  .turi.abierta .turi-lanzador{display:none}
+  .turi-panel{left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));height:min(700px,calc(100dvh - 16px - env(safe-area-inset-bottom)))}
+}
+@keyframes turi-asoma{
+  0%{transform:translateX(50%) rotate(-14deg)}
+  16%{transform:translateX(-12px) translateY(-20px) rotate(0)}
+  26%{transform:translateX(-12px) translateY(0) rotate(0)}
+  34%{transform:translateX(-12px) translateY(-7px) rotate(0)}
+  42%{transform:translateX(-12px) translateY(0) rotate(0)}
+  78%{transform:translateX(-12px) translateY(0) rotate(0)}
+  100%{transform:translateX(50%) rotate(-14deg)}
+}
+@media (max-width:759px) and (prefers-reduced-motion:reduce){
+  .turi-lanzador.saluda,.turi-lanzador.saluda .turi-cuerpo{animation:none}
+}

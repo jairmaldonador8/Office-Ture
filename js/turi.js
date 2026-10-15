@@ -608,19 +608,25 @@
 
   // cada carga de página empieza de cero: sin conversación guardada y con la nube de saludo
   try { sessionStorage.removeItem('turi'); sessionStorage.removeItem('turi-nube'); } catch (e) { /* sin almacenamiento */ }
+  var telefono = window.matchMedia('(max-width: 759px)');
   setTimeout(function () {
     if (raiz.classList.contains('abierta')) return;
     nube.classList.add('ver');
     saluda();
+    // en el teléfono la nube se va sola para no tapar el sitio
+    if (telefono.matches) setTimeout(function () { nube.classList.remove('ver'); }, 6000);
   }, 3500);
 
-  // Turi saluda con la mano al aparecer la nube y luego cada tanto mientras el chat está cerrado
+  // Turi saluda con la mano al aparecer la nube y luego cada tanto mientras el chat está cerrado;
+  // en el teléfono además se asoma desde la orilla con un saltito y se vuelve a esconder
   function saluda() {
     if (reducido || raiz.classList.contains('abierta')) return;
     lanzador.classList.add('saluda');
-    setTimeout(function () { lanzador.classList.remove('saluda'); }, 2400);
+    setTimeout(function () { lanzador.classList.remove('saluda'); }, 2600);
   }
-  setInterval(saluda, 14000);
+  (function cadaTanto() {
+    setTimeout(function () { saluda(); cadaTanto(); }, 11000 + Math.random() * 7000);
+  })();
 
   // el avatar del encabezado da un brinquito cada vez que Turi contesta
   var avatar = raiz.querySelector('.turi-avatar');
