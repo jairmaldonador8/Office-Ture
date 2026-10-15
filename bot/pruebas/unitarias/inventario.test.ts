@@ -143,4 +143,86 @@ describe("sincronizarInventario", () => {
     expect(r).toMatchObject({ activos: 2, errores: [expect.stringContaining("Aviso:")] });
     expect(correos).toEqual([]);
   });
+
+  describe("con una hoja recortada", () => {
+    const fila = (n: number) => [
+      "Sillas",
+      "Operativa",
+      `Silla ${n}`,
+      "$1,000",
+      "",
+      "",
+      "",
+      "Stock alto",
+      "Alta",
+      "",
+    ];
+    const hojaDe = (n: number) => [ENCABEZADO, ...Array.from({ length: n }, (_, i) => fila(i + 1))];
+
+    it("con menos de la mitad de los activos no toca el catálogo y avisa de inmediato, una vez", async () => {
+      const correos: string[] = [];
+      const { deps, repo } = depsDePrueba({
+        correo: async (_, t) => {
+          correos.push(t);
+        },
+      });
+      await sincronizarInventario(deps, leer(hojaDe(10)));
+      expect(await repo.contarProductosActivos()).toBe(10);
+      let llamadas = 0;
+      const original = repo.sincronizarProductos.bind(repo);
+      repo.sincronizarProductos = async (ps) => {
+        llamadas++;
+        return original(ps);
+      };
+
+      const r = await sincronizarInventario(deps, leer(hojaDe(4)));
+      expect(r).toHaveProperty("fallo");
+      expect(llamadas).toBe(0);
+      expect(await repo.contarProductosActivos()).toBe(10);
+      expect(await repo.leerMarca("fallos_inventario")).toBe("1");
+      expect(correos).toEqual([
+        "La hoja tiene 4 productos válidos de 10 activos; no actualicé el catálogo. Revisa la hoja.",
+      ]);
+
+      // Mientras siga igual no se repite, ni siquiera al tercer fallo.
+      await sincronizarInventario(deps, leer(hojaDe(4)));
+      await sincronizarInventario(deps, leer(hojaDe(4)));
+      expect(correos).toHaveLength(1);
+
+      // Se arregla y después vuelve a romperse: se avisa otra vez.
+      await sincronizarInventario(deps, leer(hojaDe(10)));
+      expect(await repo.leerMarca("fallos_inventario")).toBe("0");
+      await sincronizarInventario(deps, leer(hojaDe(4)));
+      expect(correos).toHaveLength(2);
+    });
+
+    it("con la mitad o más se aplica como siempre", async () => {
+      const { deps, repo } = depsDePrueba();
+      await sincronizarInventario(deps, leer(hojaDe(10)));
+      expect(await sincronizarInventario(deps, leer(hojaDe(5)))).toMatchObject({
+        activos: 5,
+        desactivados: 5,
+      });
+      expect(await repo.contarProductosActivos()).toBe(5);
+    });
+
+    it("con el catálogo vacío no aplica la protección", async () => {
+      const { deps } = depsDePrueba();
+      expect(await sincronizarInventario(deps, leer(hojaDe(1)))).toMatchObject({ activos: 1 });
+    });
+  });
+
+  it("si las marcas fallan al registrar un fallo, no lanza", async () => {
+    const { deps, repo } = depsDePrueba();
+    repo.leerMarca = async () => {
+      throw new Error("base caída");
+    };
+    repo.escribirMarca = async () => {
+      throw new Error("base caída");
+    };
+    const falla = async (): Promise<string[][]> => {
+      throw new Error("403 sin permiso");
+    };
+    await expect(sincronizarInventario(deps, falla)).resolves.toEqual({ fallo: "403 sin permiso" });
+  });
 });

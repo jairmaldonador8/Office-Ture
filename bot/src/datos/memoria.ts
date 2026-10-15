@@ -13,6 +13,7 @@ import {
   type LlamadaModelo,
   leadVacio,
   type Mensaje,
+  type Modo,
   type NuevoMensaje,
   type Repo,
   type ResumenDia,
@@ -230,6 +231,9 @@ export class RepoMemoria implements Repo {
     for (const p of ps) this.productos.set(p.slug, structuredClone(p));
     return { activos: ps.filter((p) => p.activo).length, desactivados };
   }
+  async contarProductosActivos() {
+    return [...this.productos.values()].filter((p) => p.activo).length;
+  }
 
   async tomarTurnos(ahora: Date, limite: number) {
     const vencido = (id: string) => {
@@ -287,6 +291,17 @@ export class RepoMemoria implements Repo {
       )
       .map((c) => ({ ...c }));
   }
+  async tomarModoVencido(id: string, modo: Modo, ahora: Date) {
+    const c = this.conversaciones.get(id);
+    if (!c || c.modo !== modo || !c.modoHasta || c.modoHasta > ahora) return false;
+    await this.actualizarConversacion(id, {
+      modo: "bot",
+      modoHasta: undefined,
+      motivoModo: undefined,
+      avisoEsperaEnviado: false,
+    });
+    return true;
+  }
 
   async crearAlerta(a: Omit<Alerta, "id">) {
     const nueva = { ...a, id: randomUUID() };
@@ -302,6 +317,15 @@ export class RepoMemoria implements Repo {
       .filter((a) => !a.atendidaEn && a.enviadaEn < antesDe)
       .sort((a, b) => a.enviadaEn.getTime() - b.enviadaEn.getTime())
       .map((a) => ({ ...a }));
+  }
+  async alertasParaReenviar(antesDe: Date) {
+    return (await this.alertasSinAtender(antesDe)).filter((a) => a.reintentos === 0 && !a.diferida);
+  }
+  async tomarAlerta(id: string) {
+    const a = this.alertas.find((x) => x.id === id);
+    if (a?.reintentos !== 0) return false;
+    a.reintentos = 1;
+    return true;
   }
   async atenderAlertas(conversacionId: string, cuando: Date) {
     for (const a of this.alertas)
@@ -339,6 +363,11 @@ export class RepoMemoria implements Repo {
   }
   async escribirMarca(clave: string, valor: string) {
     this.marcas.set(clave, valor);
+  }
+  async tomarMarca(clave: string, valor: string) {
+    if (this.marcas.get(clave) === valor) return false;
+    this.marcas.set(clave, valor);
+    return true;
   }
 }
 

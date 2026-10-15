@@ -13,6 +13,7 @@ import {
   type LlamadaModelo,
   leadVacio,
   type Mensaje,
+  type Modo,
   type NuevoMensaje,
   type Repo,
   type ResumenDia,
@@ -449,6 +450,14 @@ export class RepoSupabase implements Repo {
       desactivados: (ok(r, "desactivar") as Fila[]).length,
     };
   }
+  async contarProductosActivos() {
+    const r = await this.db
+      .from("productos")
+      .select("slug", { count: "exact", head: true })
+      .eq("activo", true);
+    if (r.error) throw new Error(`Supabase (contarProductosActivos): ${r.error.message}`);
+    return r.count ?? 0;
+  }
 
   async tomarTurnos(_ahora: Date, limite: number) {
     const ids = ok(await this.db.rpc("tomar_turnos", { p_limite: limite }), "tomarTurnos") as unknown;
@@ -501,6 +510,17 @@ export class RepoSupabase implements Repo {
       .lte("modo_hasta", ahora.toISOString());
     return (ok(r, "conversacionesConModoVencido") as Fila[]).map(conversacion);
   }
+  async tomarModoVencido(id: string, modo: Modo, ahora: Date) {
+    // Update condicional: si otro proceso ya la venció o alguien cambió el modo, no toca nada.
+    const r = await this.db
+      .from("conversaciones")
+      .update({ modo: "bot", modo_hasta: null, motivo_modo: null, aviso_espera_enviado: false })
+      .eq("id", id)
+      .eq("modo", modo)
+      .lte("modo_hasta", ahora.toISOString())
+      .select("id");
+    return (ok(r, "tomarModoVencido") as Fila[]).length > 0;
+  }
 
   async crearAlerta(a: Omit<Alerta, "id">) {
     return alerta(
@@ -518,6 +538,26 @@ export class RepoSupabase implements Repo {
       .lt("enviada_en", antesDe.toISOString())
       .order("enviada_en");
     return (ok(r, "alertasSinAtender") as Fila[]).map(alerta);
+  }
+  async alertasParaReenviar(antesDe: Date) {
+    const r = await this.db
+      .from("alertas")
+      .select("*")
+      .is("atendida_en", null)
+      .eq("reintentos", 0)
+      .eq("diferida", false)
+      .lt("enviada_en", antesDe.toISOString())
+      .order("enviada_en");
+    return (ok(r, "alertasParaReenviar") as Fila[]).map(alerta);
+  }
+  async tomarAlerta(id: string) {
+    const r = await this.db
+      .from("alertas")
+      .update({ reintentos: 1 })
+      .eq("id", id)
+      .eq("reintentos", 0)
+      .select("id");
+    return (ok(r, "tomarAlerta") as Fila[]).length > 0;
   }
   async atenderAlertas(conversacionId: string, cuando: Date) {
     ok(
@@ -613,6 +653,10 @@ export class RepoSupabase implements Repo {
       await this.db.from("marcas").upsert({ clave, valor, actualizado: new Date().toISOString() }),
       "escribirMarca",
     );
+  }
+  async tomarMarca(clave: string, valor: string) {
+    const r = await this.db.rpc("tomar_marca", { p_clave: clave, p_valor: valor });
+    return ok(r, "tomarMarca") === true;
   }
 }
 

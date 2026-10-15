@@ -182,6 +182,7 @@ export interface Repo {
   buscarProductos(f: FiltroProductos): Promise<Producto[]>;
   obtenerProducto(slug: string): Promise<Producto | null>;
   sincronizarProductos(ps: Producto[]): Promise<{ activos: number; desactivados: number }>;
+  contarProductosActivos(): Promise<number>;
 
   tomarTurnos(ahora: Date, limite: number): Promise<string[]>;
   liberarTurno(conversacionId: string): Promise<void>;
@@ -192,10 +193,19 @@ export interface Repo {
   marcarSeguimientoEnviado(id: string, cuando: Date): Promise<void>;
 
   conversacionesConModoVencido(ahora: Date): Promise<Conversacion[]>;
+  /**
+   * Regresa la conversación a `bot` solo si sigue en `modo` y su `modo_hasta` ya pasó, en una
+   * sola operación. Devuelve false si otro proceso (u otro cambio de modo) se adelantó.
+   */
+  tomarModoVencido(id: string, modo: Modo, ahora: Date): Promise<boolean>;
 
   crearAlerta(a: Omit<Alerta, "id">): Promise<Alerta>;
   actualizarAlerta(id: string, cambios: Partial<Omit<Alerta, "id">>): Promise<void>;
   alertasSinAtender(enviadasAntesDe: Date): Promise<Alerta[]>;
+  /** Sin atender, no diferidas, sin reenviar (reintentos = 0) y enviadas antes de la fecha. */
+  alertasParaReenviar(enviadasAntesDe: Date): Promise<Alerta[]>;
+  /** Pone reintentos = 1 solo si seguía en 0. Devuelve true si esta llamada la tomó. */
+  tomarAlerta(id: string): Promise<boolean>;
   atenderAlertas(conversacionId: string, cuando: Date): Promise<void>;
   alertaPorExterno(idExterno: string): Promise<Alerta | null>;
   resumenDelDia(desde: Date): Promise<ResumenDia>;
@@ -206,6 +216,8 @@ export interface Repo {
   registrarLlamadaModelo(l: LlamadaModelo): Promise<void>;
   leerMarca(clave: string): Promise<string | null>;
   escribirMarca(clave: string, valor: string): Promise<void>;
+  /** Escribe la marca solo si no existía o tenía otro valor. Devuelve true si esta llamada la escribió. */
+  tomarMarca(clave: string, valor: string): Promise<boolean>;
 }
 
 export interface Almacen {

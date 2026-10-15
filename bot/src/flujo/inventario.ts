@@ -26,10 +26,44 @@ async function avisarDueno(d: Deps, titulo: string, texto: string, detalle: stri
   if (principal) await enviarADueno(principal.telefono, texto, [titulo, "Hoja de Google", detalle], d);
 }
 
+/** Marca con el último aviso de hoja recortada; se vacía cuando una sincronización sale bien. */
+const MARCA_RECORTE = "recorte_inventario";
+
+class HojaRecortada extends Error {
+  constructor(validos: number, activos: number) {
+    super(
+      `La hoja tiene ${validos} productos válidos de ${activos} activos; no actualicé el catálogo. Revisa la hoja.`,
+    );
+  }
+}
+
+/**
+ * Suma el fallo y avisa. Una hoja recortada se avisa de inmediato, una vez por mensaje
+ * distinto; los demás fallos, al tercero seguido.
+ */
+async function registrarFallo(d: Deps, mensaje: string, recortada: boolean): Promise<void> {
+  const fallos = Number((await d.repo.leerMarca("fallos_inventario")) ?? "0") + 1;
+  await d.repo.escribirMarca("fallos_inventario", String(fallos));
+  if (recortada) {
+    if (await d.repo.tomarMarca(MARCA_RECORTE, mensaje))
+      await avisarDueno(d, "Inventario sin actualizar", mensaje, mensaje);
+    return;
+  }
+  if (fallos === FALLOS_PARA_AVISAR) {
+    await avisarDueno(
+      d,
+      "Falla de inventario",
+      `No pude leer la hoja de inventario ${FALLOS_PARA_AVISAR} veces seguidas: ${mensaje}. El asistente sigue con los últimos precios cargados.`,
+      mensaje,
+    );
+  }
+}
+
 /**
  * Copia la hoja de Google a la tabla de productos. Una lectura fallida, sin columnas
  * obligatorias o sin ningún producto válido no toca el inventario (se siguen usando los
- * últimos precios) y al tercer fallo seguido se avisa una vez. Las filas descartadas se
+ * últimos precios) y al tercer fallo seguido se avisa una vez. Si la hoja trae menos de la
+ * mitad de los productos activos tampoco se toca y se avisa de inmediato. Las filas descartadas se
  * avisan una vez por cada conjunto distinto de errores; los «Aviso:» (datos que se
  * completan con un valor por omisión) solo se devuelven.
  */
@@ -40,26 +74,25 @@ export async function sincronizarInventario(
   let resultado: { activos: number; desactivados: number; errores: string[] };
   try {
     const { productos, errores } = mapearHoja(await leer());
+    const activos = await d.repo.contarProductosActivos();
+    // Una hoja recortada (filtro puesto, filas borradas por error) desactivaría medio catálogo.
+    if (productos.length * 2 < activos) throw new HojaRecortada(productos.length, activos);
     if (productos.length === 0) throw new Error("La hoja no trajo productos válidos");
     const r = await d.repo.sincronizarProductos(productos);
     resultado = { ...r, errores };
   } catch (e) {
     const mensaje = e instanceof Error ? e.message : String(e);
     console.error("inventario", mensaje);
-    const fallos = Number((await d.repo.leerMarca("fallos_inventario")) ?? "0") + 1;
-    await d.repo.escribirMarca("fallos_inventario", String(fallos));
-    if (fallos === FALLOS_PARA_AVISAR) {
-      await avisarDueno(
-        d,
-        "Falla de inventario",
-        `No pude leer la hoja de inventario ${FALLOS_PARA_AVISAR} veces seguidas: ${mensaje}. El asistente sigue con los últimos precios cargados.`,
-        mensaje,
-      );
+    try {
+      await registrarFallo(d, mensaje, e instanceof HojaRecortada);
+    } catch (e2) {
+      console.error("inventario: no pude registrar el fallo", e2);
     }
     return { fallo: mensaje };
   }
 
   await d.repo.escribirMarca("fallos_inventario", "0");
+  await d.repo.escribirMarca(MARCA_RECORTE, "");
   const graves = resultado.errores.filter((e) => !esAviso(e));
   const huella = graves.join("\n");
   if ((await d.repo.leerMarca("errores_inventario")) !== huella) {

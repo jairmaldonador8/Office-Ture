@@ -13,7 +13,10 @@ import { procesarTurno, programarSiguiente } from "./turno.js";
 const INTENTOS_TOQUE = 2;
 const ESTADOS_CON_SEGUIMIENTO = new Set(["nuevo", "calificado", "cotizado"]);
 
-/** Cuerpo de cada plantilla tal como se registra en Meta; se guarda en el historial para que Claude sepa qué se dijo. */
+/**
+ * Cuerpo de cada plantilla tal como se registra en Meta; se guarda en el historial para que Claude sepa qué se dijo.
+ * Tienen que coincidir palabra por palabra con las plantillas aprobadas en Meta: si cambia una, se cambian las dos.
+ */
 const PLANTILLAS_SEGUIMIENTO = {
   seguimiento_precio:
     "Hola, te escribo de OfficeTure sobre la cotización que te pasamos. ¿Te gustaría avanzar o prefieres que te mande otra opción según tu presupuesto?",
@@ -46,7 +49,7 @@ export function textoSeguimiento(estado: string, tipo: "toque1" | "toque2"): str
     return "Sigo por aquí para ayudarte con tu cotización. ¿Buscas escritorio, silla o archivero?";
   }
   return estado === "cotizado"
-    ? "Solo para confirmar si sigues interesado. La entrega inmediata depende de inventario y ruta, por eso conviene apartar si ya tienes modelo."
+    ? "Solo para confirmar si todavía te interesa. La entrega inmediata depende de inventario y ruta, por eso conviene apartar si ya tienes modelo."
     : "Si necesitas varias piezas para tu equipo, también revisamos opciones por volumen. ¿Te ayudo con la cotización?";
 }
 
@@ -146,12 +149,8 @@ export async function vencerModos(d: Deps): Promise<number> {
   for (const conv of vencidas) {
     try {
       const esperaba = conv.modo === "esperando_humano";
-      await d.repo.actualizarConversacion(conv.id, {
-        modo: "bot",
-        modoHasta: undefined,
-        motivoModo: undefined,
-        avisoEsperaEnviado: false,
-      });
+      // Otro cron traslapado ya la venció, o Bryan cambió el modo después de la consulta.
+      if (!(await d.repo.tomarModoVencido(conv.id, conv.modo, ahora))) continue;
       if (esperaba) await d.repo.actualizarLead(conv.id, { escaladoSinAtender: true });
       const ventanaAbierta =
         conv.ultimoCliente !== undefined && ahora.getTime() - conv.ultimoCliente.getTime() < horas(24);
@@ -186,14 +185,13 @@ export async function vencerModos(d: Deps): Promise<number> {
 export async function reenviarAlertas(d: Deps): Promise<number> {
   const ahora = d.ahora();
   if (!enHorario(ahora)) return 0;
-  const pendientes = (await d.repo.alertasSinAtender(new Date(ahora.getTime() - 30 * 60_000))).filter(
-    (a) => a.reintentos === 0 && !a.diferida,
-  );
+  const pendientes = await d.repo.alertasParaReenviar(new Date(ahora.getTime() - 30 * 60_000));
   const destinos = duenos(d.config).slice(0, 2);
   for (const a of pendientes) {
     try {
-      // Se marca antes: un reenvío doble molesta más que uno perdido.
-      await d.repo.actualizarAlerta(a.id, { reintentos: 1 });
+      // Se toma antes de mandar y solo una ejecución la gana: un reenvío doble molesta más
+      // que uno perdido, y el cron puede traslaparse consigo mismo.
+      if (!(await d.repo.tomarAlerta(a.id))) continue;
       const conv = await d.repo.obtenerConversacion(a.conversacionId);
       if (conv.modo !== "esperando_humano") continue;
       const cliente = a.texto.split("\n")[1] ?? "";
@@ -217,10 +215,19 @@ export async function resumenDiario(d: Deps): Promise<boolean> {
   const l = local(ahora);
   if (l.dia === 0 || l.hora < 9 || l.hora >= 10) return false;
   const hoy = `${l.anio}-${l.mes + 1}-${l.fecha}`;
-  if ((await d.repo.leerMarca("resumen_diario")) === hoy) return false;
-  await d.repo.escribirMarca("resumen_diario", hoy);
+  // Solo una ejecución toma el día; si el envío falla no se repite (se registra en el log).
+  if (!(await d.repo.tomarMarca("resumen_diario", hoy))) return false;
+  try {
+    await enviarResumen(d, ahora);
+  } catch (e) {
+    console.error("resumen diario", hoy, e);
+  }
+  return true;
+}
+
+async function enviarResumen(d: Deps, ahora: Date): Promise<void> {
   const r = await d.repo.resumenDelDia(new Date(ahora.getTime() - horas(24)));
-  if (!r.diferidas.length && !r.sinAtender && !r.frios) return true;
+  if (!r.diferidas.length && !r.sinAtender && !r.frios) return;
   const lineas = [
     "Resumen de OfficeTure, últimas 24 horas:",
     ...(r.diferidas.length
@@ -233,19 +240,19 @@ export async function resumenDiario(d: Deps): Promise<boolean> {
     `Clientes que dejaron de contestar: ${r.frios}`,
   ];
   const [principal] = duenos(d.config);
-  if (principal) {
-    await enviarADueno(
-      principal.telefono,
-      lineas.join("\n"),
-      [
-        "Resumen diario",
-        `${r.diferidas.length} pendientes`,
-        `${r.sinAtender} sin atender y ${r.frios} sin respuesta`,
-      ],
-      d,
-    );
-  }
-  return true;
+  if (!principal) return;
+  const id = await enviarADueno(
+    principal.telefono,
+    lineas.join("\n"),
+    [
+      "Resumen diario",
+      `${r.diferidas.length} pendientes`,
+      `${r.sinAtender} sin atender y ${r.frios} sin respuesta`,
+    ],
+    d,
+  );
+  // enviarADueno no lanza: si no salió, devuelve undefined y el día ya quedó tomado.
+  if (id === undefined) console.error("resumen diario: no se pudo enviar a", principal.telefono);
 }
 
 /** Eventos que el webhook guardó pero no terminó de procesar (más de un minuto). */

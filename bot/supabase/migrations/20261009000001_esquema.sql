@@ -196,7 +196,22 @@ language sql set search_path = public as $$
   returning s.*;
 $$;
 
+-- Escribe una marca solo si no existía o tenía otro valor; true si esta llamada la escribió.
+-- El on conflict ... where compara y escribe en una sola operación, así que dos crons
+-- traslapados no pueden tomar la misma marca (p. ej. el resumen del mismo día).
+create or replace function tomar_marca(p_clave text, p_valor text) returns boolean
+language sql set search_path = public as $$
+  with escrita as (
+    insert into marcas (clave, valor) values (p_clave, p_valor)
+    on conflict (clave) do update set valor = excluded.valor, actualizado = now()
+      where marcas.valor is distinct from excluded.valor
+    returning 1
+  )
+  select exists (select 1 from escrita);
+$$;
+
 revoke execute on function tomar_turnos(int) from anon, authenticated, public;
 revoke execute on function tomar_seguimientos(int) from anon, authenticated, public;
+revoke execute on function tomar_marca(text, text) from anon, authenticated, public;
 
 insert into storage.buckets (id, name, public) values ('adjuntos', 'adjuntos', false) on conflict (id) do nothing;

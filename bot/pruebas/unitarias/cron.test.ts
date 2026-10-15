@@ -6,6 +6,7 @@ import {
   procesarSeguimientos,
   reenviarAlertas,
   resumenDiario,
+  textoSeguimiento,
   vencerModos,
 } from "../../src/flujo/cron.js";
 import { procesarEvento } from "../../src/flujo/entrada.js";
@@ -312,6 +313,46 @@ describe("vencerModos", () => {
     expect((await repo.obtenerLead(conv.id)).escaladoSinAtender).toBe(false);
   });
 
+  it("dos ejecuciones al mismo tiempo avisan una sola vez", async () => {
+    const p = await conConversacion();
+    const { deps, repo, wa, reloj, conv } = p;
+    await respondio(p);
+    await repo.actualizarConversacion(conv.id, {
+      modo: "esperando_humano",
+      motivoModo: "listo_para_comprar",
+      modoHasta: new Date(INICIO.getTime() + 7_200_000),
+    });
+    reloj.avanzar(7_200_001);
+    await Promise.all([vencerModos(deps), vencerModos(deps)]);
+    expect(wa.textos()).toHaveLength(1);
+  });
+
+  it("si el modo cambió entre la consulta y el vencimiento, no lo toca", async () => {
+    const p = await conConversacion();
+    const { deps, repo, wa, reloj, conv } = p;
+    await respondio(p);
+    await repo.actualizarConversacion(conv.id, {
+      modo: "esperando_humano",
+      motivoModo: "queja",
+      modoHasta: new Date(INICIO.getTime() + 1000),
+    });
+    reloj.avanzar(2000);
+    const original = repo.conversacionesConModoVencido.bind(repo);
+    repo.conversacionesConModoVencido = async (ahora) => {
+      const lista = await original(ahora);
+      // Bryan toma la conversación justo después de la consulta.
+      await repo.actualizarConversacion(conv.id, {
+        modo: "humano",
+        modoHasta: new Date(ahora.getTime() + horas(2)),
+      });
+      return lista;
+    };
+    await vencerModos(deps);
+    expect(wa.enviados).toEqual([]);
+    expect((await repo.obtenerConversacion(conv.id)).modo).toBe("humano");
+    expect((await repo.obtenerLead(conv.id)).escaladoSinAtender).toBe(false);
+  });
+
   it("modo humano vencido con el cliente sin respuesta agenda un turno", async () => {
     const { deps, repo, wa, reloj, conv } = await conConversacion();
     await repo.actualizarConversacion(conv.id, {
@@ -343,6 +384,40 @@ describe("reenviarAlertas", () => {
     await reenviarAlertas(deps);
     const destinos = wa.enviados.map((e) => e.para);
     expect(destinos).toEqual(["5218111111111", "5218122222222"]);
+  });
+
+  it("dos ejecuciones al mismo tiempo reenvían una sola vez", async () => {
+    const { deps, repo, wa, reloj, conv } = await conConversacion();
+    await repo.actualizarConversacion(conv.id, { modo: "esperando_humano" });
+    await repo.crearAlerta({
+      conversacionId: conv.id,
+      motivo: "queja",
+      texto: "OfficeTure · Queja\nCliente: Laura",
+      enviadaA: "5218111111111",
+      enviadaEn: INICIO,
+      reintentos: 0,
+      diferida: false,
+    });
+    reloj.avanzar(31 * 60_000);
+    await Promise.all([reenviarAlertas(deps), reenviarAlertas(deps)]);
+    expect(wa.enviados.map((e) => e.para)).toEqual(["5218111111111", "5218122222222"]);
+  });
+
+  it("no reenvía diferidas, ya reenviadas ni recientes", async () => {
+    const { deps, repo, wa, reloj, conv } = await conConversacion();
+    await repo.actualizarConversacion(conv.id, { modo: "esperando_humano" });
+    const base = {
+      conversacionId: conv.id,
+      motivo: "queja",
+      texto: "OfficeTure · Queja\nCliente: Laura",
+      enviadaA: "5218111111111",
+    };
+    reloj.avanzar(31 * 60_000);
+    await repo.crearAlerta({ ...base, enviadaEn: INICIO, reintentos: 0, diferida: true });
+    await repo.crearAlerta({ ...base, enviadaEn: INICIO, reintentos: 1, diferida: false });
+    await repo.crearAlerta({ ...base, enviadaEn: deps.ahora(), reintentos: 0, diferida: false });
+    expect(await reenviarAlertas(deps)).toBe(0);
+    expect(wa.enviados).toEqual([]);
   });
 
   it("no reenvía si la conversación ya salió de la espera", async () => {
@@ -382,11 +457,36 @@ describe("resumenDiario", () => {
     expect(wa.enviados[0]?.para).toBe("5218111111111");
   });
 
+  it("dos ejecuciones al mismo tiempo lo mandan una sola vez", async () => {
+    const { deps, repo, wa, reloj, conv } = await conConversacion();
+    await repo.crearAlerta({
+      conversacionId: conv.id,
+      motivo: "descuento",
+      texto: "OfficeTure · Pide descuento\nCliente: Laura",
+      enviadaA: "5218111111111",
+      enviadaEn: INICIO,
+      reintentos: 0,
+      diferida: true,
+    });
+    reloj.fijar(aLocal(2026, 9, 10, 9, 1));
+    const r = await Promise.all([resumenDiario(deps), resumenDiario(deps)]);
+    expect(r.filter(Boolean)).toHaveLength(1);
+    expect(wa.enviados).toHaveLength(1);
+  });
+
   it("fuera de las 9 no hace nada", async () => {
     const { deps, wa, reloj } = await conConversacion();
     reloj.fijar(aLocal(2026, 9, 10, 11, 0));
     expect(await resumenDiario(deps)).toBe(false);
     expect(wa.enviados).toEqual([]);
+  });
+});
+
+describe("textoSeguimiento", () => {
+  it("el segundo toque cotizado no asume género", () => {
+    const t = textoSeguimiento("cotizado", "toque2");
+    expect(t).toContain("si todavía te interesa");
+    expect(t).not.toContain("interesado");
   });
 });
 
