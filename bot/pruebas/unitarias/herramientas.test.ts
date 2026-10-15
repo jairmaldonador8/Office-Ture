@@ -147,6 +147,32 @@ describe("herramientas", () => {
     });
   });
 
+  it("registrar_lead ignora campos vacíos y no pisa datos buenos", async () => {
+    await ejecutarHerramienta("registrar_lead", { nombre: "Ana" }, ctx);
+    const r = await ejecutarHerramienta("registrar_lead", { nombre: "", empresa: "  " }, ctx);
+    expect(r.esError).toBe(false);
+    const lead = await repo.obtenerLead(ctx.conversacion.id);
+    expect(lead.nombre).toBe("Ana");
+    expect(lead.empresa).toBeUndefined();
+  });
+
+  it("enviar_foto con el mismo slug dos veces en un turno la agrega una sola vez", async () => {
+    await ejecutarHerramienta("enviar_foto", { slug: "silla-mesh" }, ctx);
+    const r = await ejecutarHerramienta("enviar_foto", { slug: "silla-mesh" }, ctx);
+    expect(JSON.parse(r.contenido)).toMatchObject({ ok: true });
+    expect(ctx.fotos).toHaveLength(1);
+  });
+
+  it("buscar_productos devuelve máximo tres por defecto y avisa de enviar_foto", async () => {
+    await repo.sincronizarProductos(
+      [1, 2, 3, 4, 5].map((n) => silla({ slug: `s${n}`, nombre: `S${n}`, precio: 1000 + n })),
+    );
+    const r = await ejecutarHerramienta("buscar_productos", { categoria: "silla" }, ctx);
+    expect((JSON.parse(r.contenido) as { productos: unknown[] }).productos).toHaveLength(3);
+    const d = HERRAMIENTAS.find((h) => h.definicion.name === "buscar_productos")?.definicion;
+    expect(d?.description).toContain("enviar_foto");
+  });
+
   it("enviar_foto solo si hay foto", async () => {
     expect((await ejecutarHerramienta("enviar_foto", { slug: "silla-lite" }, ctx)).contenido).toContain(
       "no tiene foto",

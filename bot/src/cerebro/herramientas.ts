@@ -78,7 +78,7 @@ function herramienta<S extends z.ZodType>(
 
 const buscarProductos = herramienta(
   "buscar_productos",
-  "Busca productos de entrega inmediata activos con su precio real (+ IVA), stock y uso recomendado. Úsala antes de mencionar cualquier precio, modelo, medida o color.",
+  "Busca productos de entrega inmediata activos con su precio real (+ IVA), stock y uso recomendado. Úsala antes de mencionar cualquier precio, modelo, medida o color. Los resultados con tieneFoto en true se pueden mandar con enviar_foto.",
   {
     categoria: { type: "string", enum: ["escritorio", "archivero", "silla"] },
     subcategoria: {
@@ -98,7 +98,7 @@ const buscarProductos = herramienta(
     texto: z.string().optional(),
   }),
   async (i, ctx) => {
-    const filtro: Parameters<Repo["buscarProductos"]>[0] = {};
+    const filtro: Parameters<Repo["buscarProductos"]>[0] = { limite: 3 };
     if (i.categoria) filtro.categoria = i.categoria;
     if (i.subcategoria) filtro.subcategoria = i.subcategoria;
     if (i.uso) filtro.uso = i.uso as (typeof USOS)[number];
@@ -201,9 +201,13 @@ const registrarLead = herramienta(
       "urgencia",
       "comentarios",
     ] as const;
-    for (const k of directos) if (i[k] !== undefined) Object.assign(cambios, { [k]: i[k] });
-    if (i.fecha_deseada) cambios.fechaDeseada = i.fecha_deseada;
-    if (i.horario_recibir) cambios.horarioRecibir = i.horario_recibir;
+    for (const k of directos) {
+      const v = i[k];
+      if (v === undefined || (typeof v === "string" && v.trim() === "")) continue;
+      Object.assign(cambios, { [k]: v });
+    }
+    if (i.fecha_deseada?.trim()) cambios.fechaDeseada = i.fecha_deseada;
+    if (i.horario_recibir?.trim()) cambios.horarioRecibir = i.horario_recibir;
     if (i.forma_pago) cambios.formaPago = i.forma_pago;
     if (i.tipo_cliente) cambios.tipoCliente = i.tipo_cliente;
     if (i.aviso_enviado) cambios.avisoEnviado = true;
@@ -284,6 +288,7 @@ const enviarFoto = herramienta(
     const p = await ctx.repo.obtenerProducto(i.slug);
     if (!p?.fotoUrl)
       return { ok: false, nota: "Ese producto no tiene foto cargada; ofrece que Bryan la mande." };
+    if (ctx.fotos.some((f) => f.url === p.fotoUrl)) return { ok: true };
     ctx.fotos.push({ url: p.fotoUrl, pie: `${p.nombre} · ${formatoPrecio(p.precio)}` });
     return { ok: true };
   },
