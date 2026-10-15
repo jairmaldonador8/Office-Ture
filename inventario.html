@@ -105,7 +105,7 @@
   <div class="cat-panel">
     <div class="cont show aparece">
       <div class="show-stage" aria-hidden="true">
-        <img data-stage="sillas" class="contiene activa" src="img/prod-silla-1.webp" alt="" width="1000" height="1000">
+        <img data-stage="sillas" class="contiene activa" src="img/silla-gerencial.webp" alt="" width="1200" height="1200">
         <img data-stage="lineal" src="img/prod-lineal.webp" alt="" width="1200" height="921" loading="lazy">
         <img data-stage="archivero" src="img/prod-archivero.webp" alt="" width="1200" height="841" loading="lazy">
         <img data-stage="escuadra" src="img/tono-grafito.webp" alt="" width="1000" height="820" loading="lazy">
@@ -116,17 +116,18 @@
       </div>
 
       <div class="show-lista" id="show-lista">
-        <article class="show-item activa" data-key="sillas" data-img="img/prod-silla-1.webp" data-contiene="1">
-          <figure class="show-foto blanca"><img src="img/prod-silla-1.webp" alt="Silla ejecutiva de malla con cabecera y brazos" width="1000" height="1000" loading="lazy"></figure>
+        <article class="show-item activa" data-key="sillas" data-img="img/silla-gerencial.webp" data-contiene="1">
+          <figure class="show-foto blanca"><img src="img/silla-gerencial.webp" alt="Silla gerencial de malla con cabecera y brazos ajustables" width="1200" height="1200" loading="lazy"></figure>
           <small class="show-num">01 &middot; Sillas</small>
           <h3>Sillas operativas y ejecutivas</h3>
           <p class="show-desc">Malla transpirable, brazos ajustables y base reforzada. Para jornadas largas y juntas cortas.</p>
           <div class="variantes" role="group" aria-label="Modelos de silla">
-            <button type="button" class="var-foto activa" data-img="img/prod-silla-1.webp" data-nombre="Ejecutiva con cabecera" aria-label="Ejecutiva con cabecera"><img src="img/prod-silla-1.webp" alt="" width="1000" height="1000" loading="lazy"></button>
-            <button type="button" class="var-foto" data-img="img/prod-silla-2.webp" data-nombre="Ejecutiva respaldo alto" aria-label="Ejecutiva de respaldo alto"><img src="img/prod-silla-2.webp" alt="" width="1000" height="1000" loading="lazy"></button>
-            <button type="button" class="var-foto" data-img="img/prod-silla-3.webp" data-nombre="Operativa" aria-label="Operativa"><img src="img/prod-silla-3.webp" alt="" width="1000" height="1000" loading="lazy"></button>
-            <span class="var-nombre">Ejecutiva con cabecera</span>
+            <button type="button" class="var-foto activa" data-img="img/silla-gerencial.webp" data-nombre="Gerencial" aria-label="Gerencial"><img src="img/silla-gerencial.webp" alt="" width="1200" height="1200" loading="lazy"></button>
+            <button type="button" class="var-foto" data-img="img/silla-ejecutiva.webp" data-nombre="Ejecutiva" aria-label="Ejecutiva"><img src="img/silla-ejecutiva.webp" alt="" width="1200" height="1200" loading="lazy"></button>
+            <button type="button" class="var-foto" data-img="img/silla-operativa.webp" data-nombre="Operativa" aria-label="Operativa"><img src="img/silla-operativa.webp" alt="" width="1200" height="1200" loading="lazy"></button>
+            <span class="var-nombre">Gerencial</span>
           </div>
+          <a class="enlace show-enlace" href="#silleria">Ver las once sillas</a>
           <div class="show-pie">
             <p class="precio">desde $1,490 <span>+ IVA</span></p>
             <a class="btn btn-madera btn-chico" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20sillas%20de%20oficina" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>Cotizar</a>
@@ -203,7 +204,92 @@
     <p class="cont nota">Precios de referencia en pesos mexicanos, más IVA. Pregunta por tonos disponibles y cantidades para empresa.</p>
   </div>
 
-  
+<!-- ---- Sillería ---- -->
+  <div class="cont silleria" id="silleria">
+    <div class="seccion-cabeza aparece">
+      <p class="ceja">Sillería &middot; once modelos en inventario</p>
+      <h2>Una silla para cada <em>puesto.</em></h2>
+      <p class="bajada">De la dirección a la caja, de la recepción al comedor. Todas en inventario, listas para entregarse en 1&nbsp;a&nbsp;2 días. Sillas desde $1,490 más IVA.</p>
+    </div>
+
+    <div class="filtros aparece" role="group" aria-label="Filtrar sillería">
+      <button type="button" data-grupo="todas" aria-pressed="true">Todas</button>
+      <button type="button" data-grupo="oficina" aria-pressed="false">Oficina</button>
+      <button type="button" data-grupo="espera" aria-pressed="false">Espera y visita</button>
+      <button type="button" data-grupo="industrial" aria-pressed="false">Industrial</button>
+      <button type="button" data-grupo="comedor" aria-pressed="false">Comedor y escolar</button>
+    </div>
+
+    <div class="sillas">
+      <article class="silla aparece" data-grupo="oficina">
+        <figure class="silla-foto"><img src="img/silla-gerencial.webp" alt="Silla gerencial de malla negra con cabecera y soporte lumbar" width="1200" height="1200" loading="lazy"></figure>
+        <h3>Silla gerencial</h3>
+        <p>Cabecera, soporte lumbar y brazos ajustables. Para quien pasa el día sentado.</p>
+        <a class="enlace" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20una%20silla%20gerencial" target="_blank" rel="noopener">Cotizar</a>
+      </article>
+      <article class="silla aparece" data-grupo="oficina">
+        <figure class="silla-foto"><img src="img/silla-ejecutiva.webp" alt="Silla ejecutiva de malla negra con respaldo alto y cabecera" width="1200" height="1200" loading="lazy"></figure>
+        <h3>Silla ejecutiva</h3>
+        <p>Respaldo alto de malla con cabecera. Presencia en la oficina de dirección.</p>
+        <a class="enlace" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20una%20silla%20ejecutiva" target="_blank" rel="noopener">Cotizar</a>
+      </article>
+      <article class="silla aparece" data-grupo="oficina">
+        <figure class="silla-foto"><img src="img/silla-secretarial.webp" alt="Silla secretarial de malla negra con respaldo medio" width="1200" height="1200" loading="lazy"></figure>
+        <h3>Silla secretarial</h3>
+        <p>Respaldo medio y brazos fijos. La silla de todos los días.</p>
+        <a class="enlace" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20una%20silla%20secretarial" target="_blank" rel="noopener">Cotizar</a>
+      </article>
+      <article class="silla aparece" data-grupo="oficina">
+        <figure class="silla-foto"><img src="img/silla-operativa.webp" alt="Silla operativa de malla negra con base cromada" width="1200" height="1200" loading="lazy"></figure>
+        <h3>Silla operativa</h3>
+        <p>Ligera y económica, con malla transpirable. Para estaciones en bench.</p>
+        <a class="enlace" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20una%20silla%20operativa" target="_blank" rel="noopener">Cotizar</a>
+      </article>
+      <article class="silla aparece" data-grupo="espera">
+        <figure class="silla-foto"><img src="img/silla-visita.webp" alt="Silla de visita de malla negra con base trineo cromada" width="1200" height="1200" loading="lazy"></figure>
+        <h3>Silla de visita</h3>
+        <p>Base trineo cromada, sin ruedas. Frente al escritorio de quien atiende.</p>
+        <a class="enlace" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20una%20silla%20de%20visita" target="_blank" rel="noopener">Cotizar</a>
+      </article>
+      <article class="silla aparece" data-grupo="espera">
+        <figure class="silla-foto"><img src="img/silla-sillon-1.webp" alt="Sillón de espera de una plaza en piel sintética negra" width="1200" height="1200" loading="lazy"></figure>
+        <h3>Sillón de espera, 1 plaza</h3>
+        <p>Piel sintética y estructura metálica. Para recepción y sala de espera.</p>
+        <a class="enlace" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20un%20sill%C3%B3n%20de%20espera%20de%201%20plaza" target="_blank" rel="noopener">Cotizar</a>
+      </article>
+      <article class="silla aparece" data-grupo="espera">
+        <figure class="silla-foto"><img src="img/silla-sillon-2.webp" alt="Sillón de espera de dos plazas en piel sintética negra" width="1200" height="1200" loading="lazy"></figure>
+        <h3>Sillón de espera, 2 plazas</h3>
+        <p>La misma línea, para dos. Recepciones y lobbies.</p>
+        <a class="enlace" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20un%20sill%C3%B3n%20de%20espera%20de%202%20plazas" target="_blank" rel="noopener">Cotizar</a>
+      </article>
+      <article class="silla aparece" data-grupo="industrial">
+        <figure class="silla-foto"><img src="img/silla-industrial-alta.webp" alt="Silla industrial alta de poliuretano negro con aro reposapiés" width="1200" height="1200" loading="lazy"></figure>
+        <h3>Silla industrial o de cajero, alta</h3>
+        <p>Poliuretano lavable y aro reposapiés. Para caja, mostrador o laboratorio.</p>
+        <a class="enlace" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20una%20silla%20industrial%20alta" target="_blank" rel="noopener">Cotizar</a>
+      </article>
+      <article class="silla aparece" data-grupo="industrial">
+        <figure class="silla-foto"><img src="img/silla-industrial-baja.webp" alt="Silla industrial baja de poliuretano negro con regatones" width="1200" height="1200" loading="lazy"></figure>
+        <h3>Silla industrial o de cajero, baja</h3>
+        <p>Poliuretano lavable con regatones. Para taller y producción.</p>
+        <a class="enlace" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20una%20silla%20industrial%20baja" target="_blank" rel="noopener">Cotizar</a>
+      </article>
+      <article class="silla aparece" data-grupo="comedor">
+        <figure class="silla-foto"><img src="img/silla-comedor.webp" alt="Silla de comedor de polipropileno gris oscuro, apilable" width="1200" height="1200" loading="lazy"></figure>
+        <h3>Silla de comedor</h3>
+        <p>Polipropileno apilable, fácil de limpiar. Para comedor de empleados.</p>
+        <a class="enlace" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20sillas%20de%20comedor" target="_blank" rel="noopener">Cotizar</a>
+      </article>
+      <article class="silla aparece" data-grupo="comedor">
+        <figure class="silla-foto"><img src="img/silla-mesabanco.webp" alt="Mesabanco escolar negro con paleta y portalibros" width="1200" height="1200" loading="lazy"></figure>
+        <h3>Mesabanco escolar</h3>
+        <p>Paleta y portalibros. Para capacitación y aulas.</p>
+        <a class="enlace" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20mesabancos%20escolares" target="_blank" rel="noopener">Cotizar</a>
+      </article>
+    </div>
+    <p class="nota">Las fotos corresponden a los modelos en inventario. Pregunta por colores, cantidades y precios por volumen.</p>
+  </div>
 </section>
 
 <section class="pagina-cta">

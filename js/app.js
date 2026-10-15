@@ -334,3 +334,19 @@
     });
   }
 })();
+
+/* ---- sillería: filtros por grupo (inventario.html) ---- */
+(function () {
+  'use strict';
+  var filtros = document.querySelector('.filtros');
+  if (!filtros) return;
+  var botones = filtros.querySelectorAll('button');
+  var sillas = document.querySelectorAll('.sillas .silla');
+  botones.forEach(function (b) {
+    b.addEventListener('click', function () {
+      var grupo = b.dataset.grupo;
+      botones.forEach(function (o) { o.setAttribute('aria-pressed', o === b ? 'true' : 'false'); });
+      sillas.forEach(function (s) { s.hidden = grupo !== 'todas' && s.dataset.grupo !== grupo; });
+    });
+  });
+})();
