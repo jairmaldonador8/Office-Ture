@@ -333,13 +333,18 @@
       if (abrir) {
         setTimeout(function () {
           provReg.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          var primero = provReg.querySelector('input'); if (primero) primero.focus({ preventScroll: true });
+          var primero = provReg.querySelector('input:not([type=hidden]):not([type=radio])'); if (primero) primero.focus({ preventScroll: true });
         }, 450);
       } else {
         provReg.addEventListener('transitionend', function ocultar() { if (!provReg.classList.contains('abierto')) provReg.hidden = true; provReg.removeEventListener('transitionend', ocultar); });
       }
     });
   }
+
+  /* ---- «¿Qué ofreces?»: las etiquetas escriben el campo oculto ---- */
+  document.querySelectorAll('input[name="giro-opcion"]').forEach(function (r) {
+    r.addEventListener('change', function () { if (r.checked) document.getElementById('pv-giro').value = r.value; });
+  });
 
   /* ---- formulario de proveedores → WhatsApp ---- */
   var form = document.getElementById('form-proveedor');

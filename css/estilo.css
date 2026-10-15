@@ -418,6 +418,18 @@ body.menu-abierto .barra .logo-claro{opacity:1;visibility:visible}
 .formulario input.error{border-color:var(--madera);border-bottom-width:2px}
 .formulario ::placeholder{color:var(--tenue);font-weight:300}
 .formulario textarea{resize:vertical;min-height:80px}
+/* «¿Qué ofreces?»: opciones como etiquetas que se seleccionan, en lugar del desplegable del sistema */
+.opciones{border:0;padding:0;margin:0;display:grid;gap:10px}
+.opciones legend{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;font-weight:500;color:var(--tinta);padding:0;margin-bottom:4px}
+.opciones-lista{display:flex;flex-wrap:wrap;gap:8px}
+.opciones label{position:relative;cursor:pointer}
+.opciones input{position:absolute;inset:0;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+.formulario .opciones span{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border:1px solid rgba(31,36,27,.28);border-radius:999px;font-size:13.5px;font-weight:400;letter-spacing:.01em;text-transform:none;color:var(--tinta);background:transparent;transition:background .2s ease,color .2s ease,border-color .2s ease,transform .2s var(--suave)}
+.opciones span::before{content:'';width:7px;height:7px;border-radius:50%;background:transparent;box-shadow:inset 0 0 0 1px rgba(31,36,27,.35);transition:background .2s ease,box-shadow .2s ease}
+.opciones label:hover span{border-color:var(--tinta)}
+.opciones input:checked+span{background:var(--tinta);color:var(--marfil);border-color:var(--tinta)}
+.opciones input:checked+span::before{background:var(--madera);box-shadow:none}
+.opciones input:focus-visible+span{outline:2px solid var(--madera);outline-offset:3px}
 .formulario .dos{display:grid;gap:18px}
 .formulario .btn{width:100%;margin-top:8px}
 .formulario .aviso{font-size:12px;color:var(--tenue);text-align:center}

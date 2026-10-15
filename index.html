@@ -312,9 +312,18 @@
         <label><span>Nombre</span><input id="pv-nombre" name="nombre" required placeholder="Tu nombre" autocomplete="name"></label>
         <label><span>Empresa</span><input id="pv-empresa" name="empresa" required placeholder="Nombre de la empresa" autocomplete="organization"></label>
       </div>
-      <label><span>¿Qué ofreces?</span>
-        <select id="pv-giro" name="giro"><option>Melamina, tableros y cubiertas</option><option>Herrajes y accesorios</option><option>Sillería</option><option>Estructura metálica</option><option>Fletes y logística</option><option>Otro</option></select>
-      </label>
+      <fieldset class="opciones">
+        <legend>¿Qué ofreces?</legend>
+        <input type="hidden" id="pv-giro" name="giro" value="Melamina, tableros y cubiertas">
+        <div class="opciones-lista" role="radiogroup" aria-label="Qué ofreces">
+          <label><input type="radio" name="giro-opcion" value="Melamina, tableros y cubiertas" checked><span>Melamina y cubiertas</span></label>
+          <label><input type="radio" name="giro-opcion" value="Herrajes y accesorios"><span>Herrajes y accesorios</span></label>
+          <label><input type="radio" name="giro-opcion" value="Sillería"><span>Sillería</span></label>
+          <label><input type="radio" name="giro-opcion" value="Estructura metálica"><span>Estructura metálica</span></label>
+          <label><input type="radio" name="giro-opcion" value="Fletes y logística"><span>Fletes y logística</span></label>
+          <label><input type="radio" name="giro-opcion" value="Otro"><span>Otro</span></label>
+        </div>
+      </fieldset>
       <label><span>Teléfono o WhatsApp</span><input id="pv-tel" name="tel" required placeholder="81 0000 0000" inputmode="tel" autocomplete="tel"></label>
       <label><span>Mensaje</span><textarea id="pv-msg" name="msg" rows="3" placeholder="Cuéntanos qué manejas, tiempos de entrega y zona"></textarea></label>
       <button class="btn btn-madera" type="submit"><svg><use href="#i-wa"/></svg>Enviar por WhatsApp</button>
