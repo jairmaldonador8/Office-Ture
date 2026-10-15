@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Canal, EventoCanal } from "../canales/tipos.js";
 import { ultimos10 } from "../config.js";
 import { type FiltroProductos, filtrarProductos, type Producto } from "../negocio/productos.js";
+import { elegirPendiente, type HuellaEco } from "./eco.js";
 import {
   type Alerta,
   type Almacen,
@@ -148,6 +149,38 @@ export class RepoMemoria implements Repo {
   }
   async existeMensajeExterno(idExterno: string) {
     return this.mensajes.some((m) => m.idExterno === idExterno);
+  }
+  async mensajePorExterno(idExterno: string) {
+    const m = this.mensajes.find((x) => x.idExterno === idExterno);
+    return m ? { ...m } : null;
+  }
+  async asignarIdExterno(mensajeId: string, idExterno: string) {
+    const fila = this.mensajes.find((x) => x.id === mensajeId);
+    if (!fila || fila.idExterno === idExterno) return;
+    const otro = this.mensajes.find((x) => x.idExterno === idExterno);
+    if (otro) {
+      // Mismo criterio que en Supabase: solo se reemplaza un eco humano posterior a la fila.
+      if (otro.autor !== "humano" || otro.creado < fila.creado) return;
+      this.mensajes = this.mensajes.filter((x) => x !== otro);
+    }
+    if (fila.idExterno === undefined) fila.idExterno = idExterno;
+    else this.mensajes.push({ ...fila, id: randomUUID(), idExterno, creado: this.reloj() });
+  }
+  async botPendienteParaEco(conversacionId: string, eco: HuellaEco, desde: Date) {
+    const m = elegirPendiente(
+      this.mensajes.filter(
+        (x) =>
+          x.conversacionId === conversacionId &&
+          x.autor === "bot" &&
+          x.idExterno === undefined &&
+          x.creado >= desde,
+      ),
+      eco,
+    );
+    return m ? { ...m } : null;
+  }
+  async borrarMensaje(mensajeId: string) {
+    this.mensajes = this.mensajes.filter((x) => x.id !== mensajeId);
   }
   async mensajesDelHilo(conversacionId: string, hilo: number) {
     return this.mensajes

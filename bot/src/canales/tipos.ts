@@ -34,6 +34,9 @@ export interface EcoHumano {
   idExterno: string;
   /** Cliente que recibió el mensaje. */
   para: string;
+  /** Solo si no es texto: imagen, audio u otro adjunto. */
+  tipo?: TipoMensaje;
+  /** Texto o pie de foto. */
   texto?: string;
   fecha: string;
 }

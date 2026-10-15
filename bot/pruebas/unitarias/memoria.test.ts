@@ -184,3 +184,117 @@ describe("RepoMemoria", () => {
     expect(await repo.resumenDelDia(new Date(2000))).toMatchObject({ sinAtender: 0, frios: 0 });
   });
 });
+
+describe("RepoMemoria: ecos de envíos del bot", () => {
+  const T0 = new Date("2026-10-09T16:00:00Z");
+  const despues = (ms: number) => new Date(T0.getTime() + ms);
+
+  async function conPendiente(texto: string, tipo: "texto" | "imagen" = "texto") {
+    const p = await conConversacion();
+    p.repo.reloj = () => T0;
+    const fila = await p.repo.guardarMensaje({
+      conversacionId: p.conv.id,
+      hilo: 1,
+      autor: "bot",
+      tipo,
+      ...(texto ? { texto } : {}),
+    });
+    return { ...p, fila };
+  }
+
+  it("mensajePorExterno devuelve el mensaje con su autor o null", async () => {
+    const { repo, conv } = await conConversacion();
+    await repo.guardarMensaje({
+      conversacionId: conv.id,
+      hilo: 1,
+      autor: "bot",
+      tipo: "texto",
+      idExterno: "x1",
+    });
+    expect((await repo.mensajePorExterno("x1"))?.autor).toBe("bot");
+    expect(await repo.mensajePorExterno("x2")).toBeNull();
+  });
+
+  it("botPendienteParaEco encuentra el texto pendiente, también recortado como en Instagram", async () => {
+    const largo = "á".repeat(600);
+    const { repo, conv, fila } = await conPendiente(largo);
+    const recortado = `${"á".repeat(498)}...`;
+    expect(
+      (await repo.botPendienteParaEco(conv.id, { texto: ` ${recortado} `, esImagen: false }, T0))?.id,
+    ).toBe(fila.id);
+    expect(await repo.botPendienteParaEco(conv.id, { texto: "otra cosa", esImagen: false }, T0)).toBeNull();
+    expect(await repo.botPendienteParaEco(conv.id, { texto: largo, esImagen: false }, despues(1))).toBeNull();
+  });
+
+  it("botPendienteParaEco de imagen sin texto toma la imagen pendiente más reciente", async () => {
+    const { repo, conv } = await conPendiente("", "imagen");
+    repo.reloj = () => despues(1000);
+    const segunda = await repo.guardarMensaje({
+      conversacionId: conv.id,
+      hilo: 1,
+      autor: "bot",
+      tipo: "imagen",
+    });
+    await repo.guardarMensaje({
+      conversacionId: conv.id,
+      hilo: 1,
+      autor: "bot",
+      tipo: "texto",
+      texto: "Hola",
+    });
+    expect((await repo.botPendienteParaEco(conv.id, { esImagen: true }, T0))?.id).toBe(segunda.id);
+  });
+
+  it("botPendienteParaEco ignora filas con id externo o de otro autor", async () => {
+    const { repo, conv, fila } = await conPendiente("Hola");
+    await repo.asignarIdExterno(fila.id, "out.1");
+    await repo.guardarMensaje({
+      conversacionId: conv.id,
+      hilo: 1,
+      autor: "cliente",
+      tipo: "texto",
+      texto: "Hola",
+    });
+    expect(await repo.botPendienteParaEco(conv.id, { texto: "Hola", esImagen: false }, T0)).toBeNull();
+  });
+
+  it("asignarIdExterno es idempotente y sustituye un duplicado humano guardado por el eco", async () => {
+    const { repo, conv, fila } = await conPendiente("Hola");
+    await repo.asignarIdExterno(fila.id, "out.1");
+    await repo.asignarIdExterno(fila.id, "out.1");
+    expect(repo.mensajes.filter((m) => m.idExterno === "out.1")).toHaveLength(1);
+
+    const otra = await repo.guardarMensaje({
+      conversacionId: conv.id,
+      hilo: 1,
+      autor: "bot",
+      tipo: "texto",
+      texto: "Ok",
+    });
+    await repo.guardarMensaje({
+      conversacionId: conv.id,
+      hilo: 1,
+      autor: "humano",
+      tipo: "texto",
+      idExterno: "out.2",
+    });
+    await repo.asignarIdExterno(otra.id, "out.2");
+    expect(repo.mensajes.filter((m) => m.idExterno === "out.2").map((m) => m.autor)).toEqual(["bot"]);
+  });
+
+  it("asignarIdExterno sobre una fila que ya tiene otro id guarda una copia con el nuevo", async () => {
+    const { repo, fila } = await conPendiente("Hola");
+    await repo.asignarIdExterno(fila.id, "out.1");
+    await repo.asignarIdExterno(fila.id, "out.2");
+    expect(repo.mensajes.map((m) => [m.autor, m.texto, m.idExterno])).toEqual([
+      ["bot", "Hola", "out.1"],
+      ["bot", "Hola", "out.2"],
+    ]);
+  });
+
+  it("borrarMensaje quita la fila", async () => {
+    const { repo, fila } = await conPendiente("Hola");
+    await repo.borrarMensaje(fila.id);
+    expect(repo.mensajes).toEqual([]);
+  });
+});

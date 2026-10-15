@@ -94,7 +94,13 @@ export function parsearInstagram(payload: unknown, igUserId: string): EventoCana
           para: receptor,
           fecha: fechaIso(raw.timestamp),
         };
-        eventos.push({ clase: "eco", e: m.text ? { ...eco, texto: m.text } : eco });
+        const adjunto = m.attachments?.[0]?.type;
+        const tipo =
+          adjunto === "image" ? "imagen" : adjunto === "audio" ? "audio" : adjunto ? "otro" : undefined;
+        eventos.push({
+          clase: "eco",
+          e: { ...eco, ...(tipo ? { tipo } : {}), ...(m.text ? { texto: m.text } : {}) },
+        });
         continue;
       }
       if (!emisor || emisor === igUserId) continue;

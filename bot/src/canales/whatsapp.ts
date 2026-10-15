@@ -5,6 +5,7 @@ import type {
   MediaDescargada,
   MensajeEntrante,
   ReferenciaAnuncio,
+  TipoMensaje,
 } from "./tipos.js";
 import { ErrorMeta, TIEMPO_LIMITE_ARCHIVO_MS, TIEMPO_LIMITE_MS } from "./tipos.js";
 
@@ -28,6 +29,14 @@ interface WaMensaje {
   };
   context?: { id?: string };
 }
+
+const TIPO_ECO_WA: Record<string, TipoMensaje> = {
+  image: "imagen",
+  audio: "audio",
+  video: "otro",
+  document: "otro",
+  sticker: "otro",
+};
 
 const iso = (ts: unknown): string => {
   const n = typeof ts === "string" || typeof ts === "number" ? Number(ts) : Number.NaN;
@@ -127,8 +136,14 @@ export function parsearWhatsApp(payload: unknown): EventoCanal[] {
             para: e.to as string,
             fecha: iso(e.timestamp),
           };
-          const cuerpo = (e.text as { body?: string } | undefined)?.body;
-          eventos.push({ clase: "eco", e: cuerpo ? { ...eco, texto: cuerpo } : eco });
+          const tipo = TIPO_ECO_WA[e.type as string];
+          const cuerpo =
+            (e.text as { body?: string } | undefined)?.body ??
+            (e.image as { caption?: string } | undefined)?.caption;
+          eventos.push({
+            clase: "eco",
+            e: { ...eco, ...(tipo ? { tipo } : {}), ...(cuerpo ? { texto: cuerpo } : {}) },
+          });
         }
       }
     }

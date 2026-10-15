@@ -125,6 +125,24 @@ describe("parsearWhatsApp", () => {
     ]);
   });
 
+  it("eco de una imagen con pie lleva su tipo y el pie como texto", () => {
+    const ev = parsearWhatsApp(
+      envolver("smb_message_echoes", {
+        message_echoes: [
+          {
+            from: "5218124283124",
+            to: "5218112345678",
+            id: "wamid.foto",
+            timestamp: "2",
+            type: "image",
+            image: { id: "m1", caption: "Así queda" },
+          },
+        ],
+      }),
+    );
+    expect(ev[0]).toMatchObject({ clase: "eco", e: { tipo: "imagen", texto: "Así queda" } });
+  });
+
   it("ignora estados de entrega y payloads desconocidos", () => {
     expect(parsearWhatsApp(envolver("messages", { statuses: [{ id: "w", status: "read" }] }))).toEqual([]);
     expect(parsearWhatsApp({ object: "page" })).toEqual([]);

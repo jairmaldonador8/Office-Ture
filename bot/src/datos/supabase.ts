@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Canal, EventoCanal } from "../canales/tipos.js";
 import { ultimos10 } from "../config.js";
 import { type FiltroProductos, filtrarProductos, type Producto } from "../negocio/productos.js";
+import { elegirPendiente, type HuellaEco } from "./eco.js";
 import {
   type Alerta,
   type Almacen,
@@ -309,6 +310,57 @@ export class RepoSupabase implements Repo {
       .eq("id_externo", idExterno);
     if (r.error) throw new Error(`Supabase (existeMensajeExterno): ${r.error.message}`);
     return (r.count ?? 0) > 0;
+  }
+  async mensajePorExterno(idExterno: string) {
+    const f = ok(
+      await this.db.from("mensajes").select("*").eq("id_externo", idExterno).maybeSingle(),
+      "mensajePorExterno",
+    ) as Fila | null;
+    return f ? mensaje(f) : null;
+  }
+  async asignarIdExterno(mensajeId: string, idExterno: string): Promise<void> {
+    const fila = ok(
+      await this.db.from("mensajes").select("*").eq("id", mensajeId).maybeSingle(),
+      "asignarIdExterno",
+    ) as Fila | null;
+    if (!fila || fila.id_externo === idExterno) return;
+    const otro = await this.mensajePorExterno(idExterno);
+    if (otro) {
+      // Solo se reemplaza un eco humano guardado después de crear la fila pendiente.
+      if (otro.autor !== "humano" || otro.creado < new Date(fila.creado)) return;
+      await this.borrarMensaje(otro.id);
+    }
+    if (fila.id_externo === null) {
+      // Si otro proceso le puso id entretanto, el filtro no toca nada y se revisa de nuevo.
+      const r = await this.db
+        .from("mensajes")
+        .update({ id_externo: idExterno })
+        .eq("id", mensajeId)
+        .is("id_externo", null)
+        .select("id");
+      if (r.error?.code === "23505") return;
+      if ((ok(r, "asignarIdExterno") as Fila[]).length > 0) return;
+      return this.asignarIdExterno(mensajeId, idExterno);
+    }
+    const { id: _, id_externo: __, creado: ___, ...copia } = fila;
+    const r = await this.db.from("mensajes").insert({ ...copia, id_externo: idExterno });
+    if (r.error && r.error.code !== "23505")
+      throw new Error(`Supabase (asignarIdExterno): ${r.error.message}`);
+  }
+  async botPendienteParaEco(conversacionId: string, eco: HuellaEco, desde: Date) {
+    const r = await this.db
+      .from("mensajes")
+      .select("*")
+      .eq("conversacion_id", conversacionId)
+      .eq("autor", "bot")
+      .is("id_externo", null)
+      .gte("creado", desde.toISOString())
+      .order("creado", { ascending: false })
+      .limit(20);
+    return elegirPendiente((ok(r, "botPendienteParaEco") as Fila[]).map(mensaje), eco);
+  }
+  async borrarMensaje(mensajeId: string) {
+    ok(await this.db.from("mensajes").delete().eq("id", mensajeId), "borrarMensaje");
   }
   async mensajesDelHilo(conversacionId: string, hilo: number) {
     const r = await this.db

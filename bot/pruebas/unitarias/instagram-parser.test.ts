@@ -111,6 +111,36 @@ describe("parsearInstagram", () => {
     ]);
   });
 
+  it("eco de una imagen lleva su tipo y no trae texto", () => {
+    const ev = parsearInstagram(
+      envolver([
+        {
+          sender: { id: NEGOCIO },
+          recipient: { id: "IGSID1" },
+          timestamp: 5000,
+          message: {
+            mid: "mid.foto",
+            is_echo: true,
+            attachments: [{ type: "image", payload: { url: "https://x" } }],
+          },
+        },
+      ]),
+      NEGOCIO,
+    );
+    expect(ev).toEqual([
+      {
+        clase: "eco",
+        e: {
+          canal: "instagram",
+          idExterno: "mid.foto",
+          para: "IGSID1",
+          tipo: "imagen",
+          fecha: new Date(5000).toISOString(),
+        },
+      },
+    ]);
+  });
+
   it("ignora lecturas, reacciones, mensajes borrados y otros objetos", () => {
     expect(
       parsearInstagram(

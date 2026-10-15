@@ -1,4 +1,10 @@
-import { type EcoHumano, type EventoCanal, idEvento, type MensajeEntrante } from "../canales/tipos.js";
+import {
+  type EcoHumano,
+  type EventoCanal,
+  idEvento,
+  type MensajeEntrante,
+  type TipoMensaje,
+} from "../canales/tipos.js";
 import { esDueno } from "../config.js";
 import type { Conversacion, Mensaje } from "../datos/tipos.js";
 import { horas } from "../hora.js";
@@ -10,8 +16,8 @@ import { referenciaCliente } from "./escalar.js";
 const DEBOUNCE_MS = 4000;
 /** Cuánto se calla el asistente después de que Bryan escribe desde su app. */
 const HUMANO_MS = horas(12);
-/** Margen para que el bot guarde el id de un mensaje que acaba de enviar antes de que llegue su eco. */
-const ESPERA_ECO_MS = 2000;
+/** Un eco se compara con los envíos pendientes del bot de los últimos 2 minutos. */
+const VENTANA_ECO_MS = 2 * 60_000;
 const EXTENSION: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -79,8 +85,11 @@ async function procesarCliente(m: MensajeEntrante, d: Deps): Promise<void> {
     });
   }
 
-  const cambios: Partial<Conversacion> = { ultimoCliente: ahora, toques: 0 };
-  if (!conv.primerCliente) cambios.primerCliente = ahora;
+  // La hora del mensaje, no la del proceso: un reintento tardío no debe correr la ventana de 24 h.
+  const enviado = fechaValida(m.fecha);
+  const cuando = enviado && enviado < ahora ? enviado : ahora;
+  const cambios: Partial<Conversacion> = { ultimoCliente: cuando, toques: 0 };
+  if (!conv.primerCliente) cambios.primerCliente = cuando;
   if (!conv.referencia && m.referencia) cambios.referencia = m.referencia;
   if (conv.modo === "bot" || conv.modo === "esperando_humano")
     cambios.responderEn = new Date(ahora.getTime() + DEBOUNCE_MS);
@@ -123,11 +132,15 @@ async function prepararAdjunto(
   }
 }
 
+/**
+ * Eco de un mensaje que salió del número o la cuenta del negocio. Si es un envío del propio
+ * bot (ya guardado con su id, o pendiente con el mismo contenido) se ignora; si no, lo mandó
+ * Bryan desde su app y el asistente se calla 12 h. Los cambios de estado van antes de guardar
+ * el mensaje y son idempotentes, así un reintento siempre los completa.
+ */
 async function procesarEco(e: EcoHumano, d: Deps): Promise<void> {
-  if (await d.repo.existeMensajeExterno(e.idExterno)) return;
-  // El bot pudo haber enviado este mensaje y aún no guardar su id: se espera una vez.
-  await d.esperar(ESPERA_ECO_MS);
-  if (await d.repo.existeMensajeExterno(e.idExterno)) return;
+  const previo = await d.repo.mensajePorExterno(e.idExterno);
+  if (previo && previo.autor !== "humano") return;
 
   const contacto = await d.repo.contactoPorExterno(e.canal, e.para);
   const conv = contacto
@@ -135,17 +148,25 @@ async function procesarEco(e: EcoHumano, d: Deps): Promise<void> {
     : e.canal === "whatsapp"
       ? await d.repo.conversacionPorReferencia(e.para)
       : null;
-  if (!conv) return;
+  if (!conv) {
+    console.warn("eco sin conversación", e.canal, enmascarar(e.para));
+    return;
+  }
 
   const ahora = d.ahora();
-  await d.repo.guardarMensaje({
-    conversacionId: conv.id,
-    hilo: conv.hilo,
-    autor: "humano",
-    tipo: "texto",
-    texto: e.texto ?? "",
-    idExterno: e.idExterno,
-  });
+  if (!previo) {
+    const enviado = fechaValida(e.fecha) ?? ahora;
+    const propio = await d.repo.botPendienteParaEco(
+      conv.id,
+      { ...(e.texto ? { texto: e.texto } : {}), esImagen: e.tipo === "imagen" },
+      new Date(Math.min(enviado.getTime(), ahora.getTime()) - VENTANA_ECO_MS),
+    );
+    if (propio) {
+      await d.repo.asignarIdExterno(propio.id, e.idExterno);
+      return;
+    }
+  }
+
   if (conv.modo !== "pausado") {
     await d.repo.actualizarConversacion(conv.id, {
       modo: "humano",
@@ -156,7 +177,31 @@ async function procesarEco(e: EcoHumano, d: Deps): Promise<void> {
   }
   await d.repo.atenderAlertas(conv.id, ahora);
   await d.repo.cancelarSeguimientos(conv.id);
+  if (previo) return;
+  const tipo = e.tipo ?? "texto";
+  await d.repo.guardarMensaje({
+    conversacionId: conv.id,
+    hilo: conv.hilo,
+    autor: "humano",
+    tipo,
+    texto: e.texto ?? NOTA_ECO[tipo] ?? "",
+    idExterno: e.idExterno,
+  });
 }
+
+const NOTA_ECO: Partial<Record<TipoMensaje, string>> = {
+  imagen: "[Bryan envió una imagen]",
+  audio: "[Bryan envió un audio]",
+  otro: "[Bryan envió un adjunto]",
+};
+
+const fechaValida = (iso: string): Date | undefined => {
+  const f = new Date(iso);
+  return iso && Number.isFinite(f.getTime()) ? f : undefined;
+};
+
+/** Teléfono o IGSID con solo los últimos 4 caracteres visibles, para los registros. */
+const enmascarar = (id: string): string => `***${id.slice(-4)}`;
 
 async function procesarDueno(m: MensajeEntrante, d: Deps): Promise<void> {
   await d.repo.registrarVentanaDueno(m.de, d.ahora());

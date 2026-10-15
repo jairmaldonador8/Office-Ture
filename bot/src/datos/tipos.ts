@@ -1,5 +1,6 @@
 import type { Canal, EventoCanal, ReferenciaAnuncio, TipoMensaje } from "../canales/tipos.js";
 import type { FiltroProductos, Producto } from "../negocio/productos.js";
+import type { HuellaEco } from "./eco.js";
 
 export type Modo = "bot" | "esperando_humano" | "humano" | "pausado";
 export type Estado =
@@ -158,6 +159,20 @@ export interface Repo {
 
   guardarMensaje(m: NuevoMensaje): Promise<Mensaje>;
   existeMensajeExterno(idExterno: string): Promise<boolean>;
+  mensajePorExterno(idExterno: string): Promise<Mensaje | null>;
+  /**
+   * Pone el id externo a un envío del bot guardado como pendiente. Idempotente. Si la fila ya
+   * tenía otro id (un reintento también salió), guarda una copia con el nuevo. Si un eco ya
+   * guardó ese id como mensaje humano después de crear la fila, ese duplicado se borra.
+   */
+  asignarIdExterno(mensajeId: string, idExterno: string): Promise<void>;
+  /**
+   * El envío pendiente del bot (sin id externo, creado desde `desde`) más reciente que
+   * coincide con el eco: mismo texto (también recortado como lo manda Instagram), o la
+   * imagen pendiente más reciente si el eco es una imagen.
+   */
+  botPendienteParaEco(conversacionId: string, eco: HuellaEco, desde: Date): Promise<Mensaje | null>;
+  borrarMensaje(mensajeId: string): Promise<void>;
   mensajesDelHilo(conversacionId: string, hilo: number): Promise<Mensaje[]>;
   moverAlHilo(conversacionId: string, hilo: number, ultimos: number): Promise<void>;
 
