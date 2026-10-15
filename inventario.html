@@ -17,7 +17,7 @@
 <link rel="preload" href="fonts/Poppins-600.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/Poppins-300.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/estilo.css">
-<link rel="stylesheet" href="css/mariana.css">
+<link rel="stylesheet" href="css/turi.css">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -108,11 +108,11 @@
     <div class="cont show aparece">
       <div class="show-stage" aria-hidden="true">
         <img data-stage="sillas" class="contiene activa" src="img/silla-gerencial.webp" alt="" width="1200" height="1200">
-        <img data-stage="lineal" src="img/prod-lineal.webp" alt="" width="1200" height="921" loading="lazy">
-        <img data-stage="archivero" src="img/prod-archivero.webp" alt="" width="1200" height="841" loading="lazy">
-        <img data-stage="escuadra" src="img/tono-grafito.webp" alt="" width="1000" height="820" loading="lazy">
-        <img data-stage="semiejecutivo" src="img/prod-semiejecutivo.webp" alt="" width="1200" height="1600" loading="lazy">
-        <img data-stage="ejecutivo" src="img/prod-ejecutivo.webp" alt="" width="1200" height="1600" loading="lazy">
+        <img data-stage="lineal" class="contiene" src="img/prod-lineal.webp" alt="" width="1200" height="1200" loading="lazy">
+        <img data-stage="archivero" class="contiene" src="img/prod-archivero.webp" alt="" width="1200" height="1200" loading="lazy">
+        <img data-stage="escuadra" class="contiene" src="img/prod-escuadra-grafito.webp" alt="" width="1200" height="1200" loading="lazy">
+        <img data-stage="semiejecutivo" class="contiene" src="img/prod-semiejecutivo.webp" alt="" width="1200" height="1200" loading="lazy">
+        <img data-stage="ejecutivo" class="contiene" src="img/prod-ejecutivo.webp" alt="" width="1200" height="1200" loading="lazy">
         <div class="stage-pie"><b id="stage-num">01</b><span id="stage-nombre">Sillas operativas y ejecutivas</span></div>
         <div class="stage-sello"><img src="img/isotipo-marfil.png" alt="" width="1000" height="1000"></div>
       </div>
@@ -136,8 +136,8 @@
           </div>
         </article>
 
-        <article class="show-item" data-key="lineal" data-img="img/prod-lineal.webp">
-          <figure class="show-foto"><img src="img/prod-lineal.webp" alt="Escritorio lineal en tono grafito con cajonera de tres gavetas" width="1200" height="921" loading="lazy"></figure>
+        <article class="show-item" data-key="lineal" data-img="img/prod-lineal.webp" data-contiene="1">
+          <figure class="show-foto blanca"><img src="img/prod-lineal.webp" alt="Escritorio lineal en roble claro con patas metálicas y silla de malla" width="1200" height="1200" loading="lazy"></figure>
           <small class="show-num">02 &middot; Escritorios</small>
           <h3>Escritorio lineal con cajonera</h3>
           <p class="show-desc">El básico que nunca falla: cubierta de melamina, cajonera de tres gavetas con llave y pasacables.</p>
@@ -147,8 +147,8 @@
           </div>
         </article>
 
-        <article class="show-item" data-key="archivero" data-img="img/prod-archivero.webp">
-          <figure class="show-foto"><img src="img/prod-archivero.webp" alt="Archiveros verticales de cuatro gavetas en tonos grafito, nogal y claro" width="1200" height="841" loading="lazy"></figure>
+        <article class="show-item" data-key="archivero" data-img="img/prod-archivero.webp" data-contiene="1">
+          <figure class="show-foto blanca"><img src="img/prod-archivero.webp" alt="Archivero vertical de cuatro gavetas en gris" width="1200" height="1200" loading="lazy"></figure>
           <small class="show-num">03 &middot; Almacenaje</small>
           <h3>Archivero vertical de 4 gavetas</h3>
           <p class="show-desc">Para carpetas tamaño oficio, con llave y correderas de extensión completa. En grafito, nogal o claro.</p>
@@ -158,15 +158,15 @@
           </div>
         </article>
 
-        <article class="show-item" data-key="escuadra" data-img="img/tono-grafito.webp">
-          <figure class="show-foto"><img src="img/tono-grafito.webp" alt="Escritorio en escuadra en tono grafito" width="1000" height="820" loading="lazy"></figure>
+        <article class="show-item" data-key="escuadra" data-img="img/prod-escuadra-grafito.webp" data-contiene="1">
+          <figure class="show-foto blanca"><img src="img/prod-escuadra-grafito.webp" alt="Escritorio en escuadra con cajonera en tono grafito" width="1200" height="1200" loading="lazy"></figure>
           <small class="show-num">04 &middot; Escritorios</small>
           <h3>Escritorio en escuadra</h3>
           <p class="show-desc">Cubierta en L con cajonera lateral. Elige el acabado y mira cómo cambia.</p>
           <div class="variantes" role="group" aria-label="Acabados">
-            <button type="button" class="var-tono activa" data-img="img/tono-grafito.webp" data-nombre="Grafito" style="--c:#4a4a4a" aria-label="Grafito"></button>
-            <button type="button" class="var-tono" data-img="img/tono-nogal.webp" data-nombre="Nogal" style="--c:#7a5137" aria-label="Nogal"></button>
-            <button type="button" class="var-tono" data-img="img/tono-claro.webp" data-nombre="Claro" style="--c:#d9c7a7" aria-label="Claro"></button>
+            <button type="button" class="var-tono activa" data-img="img/prod-escuadra-grafito.webp" data-nombre="Grafito" style="--c:#4a4a4a" aria-label="Grafito"></button>
+            <button type="button" class="var-tono" data-img="img/prod-escuadra-nogal.webp" data-nombre="Nogal" style="--c:#7a5137" aria-label="Nogal"></button>
+            <button type="button" class="var-tono" data-img="img/prod-escuadra-claro.webp" data-nombre="Claro" style="--c:#d9c7a7" aria-label="Claro"></button>
             <span class="var-nombre">Grafito</span>
           </div>
           <div class="show-pie">
@@ -175,8 +175,8 @@
           </div>
         </article>
 
-        <article class="show-item" data-key="semiejecutivo" data-img="img/prod-semiejecutivo.webp">
-          <figure class="show-foto"><img src="img/prod-semiejecutivo.webp" alt="Escritorio semiejecutivo en L con librero en tono claro y silla ejecutiva" width="1200" height="1600" loading="lazy"></figure>
+        <article class="show-item" data-key="semiejecutivo" data-img="img/prod-semiejecutivo.webp" data-contiene="1">
+          <figure class="show-foto blanca"><img src="img/prod-semiejecutivo.webp" alt="Escritorio semiejecutivo en L con librero superior en nogal" width="1200" height="1200" loading="lazy"></figure>
           <small class="show-num">05 &middot; Escritorios</small>
           <h3>Semiejecutivo en L con librero</h3>
           <p class="show-desc">Escritorio en L con librero superior y cajonera integrada. Para gerencias y despachos.</p>
@@ -186,8 +186,8 @@
           </div>
         </article>
 
-        <article class="show-item" data-key="ejecutivo" data-img="img/prod-ejecutivo.webp">
-          <figure class="show-foto"><img src="img/prod-ejecutivo.webp" alt="Escritorio ejecutivo en nogal con librero y silla ejecutiva" width="1200" height="1600" loading="lazy"></figure>
+        <article class="show-item" data-key="ejecutivo" data-img="img/prod-ejecutivo.webp" data-contiene="1">
+          <figure class="show-foto blanca"><img src="img/prod-ejecutivo.webp" alt="Escritorio ejecutivo en nogal con librero superior y cajonera" width="1200" height="1200" loading="lazy"></figure>
           <small class="show-num">06 &middot; Escritorios</small>
           <h3>Ejecutivo con librero</h3>
           <p class="show-desc">Cubierta amplia, credenza con librero y puertas. La pieza para la oficina de dirección.</p>
@@ -233,7 +233,7 @@
 <a class="flotante" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20mobiliario%20para%20mi%20oficina" target="_blank" rel="noopener" aria-label="Escríbenos por WhatsApp"><svg><use href="#i-wa"/></svg></a>
 
 <script src="js/app.js" defer></script>
-<script src="js/mariana.js" defer></script>
+<script src="js/turi.js" defer></script>
 <script src="js/espacio.js" defer></script>
 </body>
 </html>

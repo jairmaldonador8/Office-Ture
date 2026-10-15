@@ -3,12 +3,13 @@
    Responde en el navegador con reglas fijas, los 42 productos reales de la hoja
    de Tadeo y los datos del cerebro. Cuando el bot de /bot esté desplegado con
    la llave de Anthropic, `responder()` se cambia por una llamada a su API.
-   Para poner la mascota: cambiar MASCOTA por la ruta de su imagen.
+   Turi es la mascota: cuatro poses (img/turi-*.webp) que cambian según lo que
+   pasa en el chat: quieto, saluda, laptop (mientras escribe) y café (despedida).
    ========================================================================== */
 (function () {
   'use strict';
 
-  var MASCOTA = 'img/isotipo-marfil.png';
+  var POSE = { quieto: 'img/turi-quieto.webp', saluda: 'img/turi-saluda.webp', laptop: 'img/turi-laptop.webp', cafe: 'img/turi-cafe.webp', cara: 'img/turi-cara.webp' };
   var WA = 'https://wa.me/5218124283124';
   var reducido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -173,7 +174,8 @@
         html: foto + (n === 1
           ? art(p, 'Una', 'Un') + ' <b>' + esc(p.nombre) + '</b> queda en <b>' + dinero(p.precio) + '</b>.\n'
           : n + ' × <b>' + esc(p.nombre) + '</b> a ' + dinero(p.precio) + ' cada una.\nSerían <b>' + dinero(total) + '</b>.\n') + extra + ' ¿En qué municipio sería la entrega?',
-        chips: ['Monterrey', 'San Nicolás', 'Pasar con Bryan']
+        chips: ['Monterrey', 'San Nicolás', 'Pasar con Bryan'],
+        pose: 'laptop'
       };
     }
     return {
@@ -247,7 +249,7 @@
     var saludo = '';
 
     if (SALUDO.test(t) || COMO_ESTAS.test(t)) {
-      var resto = t.replace(SALUDO, '').replace(COMO_ESTAS, '').replace(/\b(mariana|que tal|buen dia)\b/g, '').trim();
+      var resto = t.replace(SALUDO, '').replace(COMO_ESTAS, '').replace(/\b(turi|que tal|buen dia)\b/g, '').trim();
       var preguntaComo = COMO_ESTAS.test(t);
       if (resto.split(' ').length < 2) {
         estado.sinEntender = 0;
@@ -257,16 +259,18 @@
               saludoHora() + '. Muy bien, gracias por preguntar. ¿Y tú cómo vas?\nCuéntame qué buscas para tu oficina y te ayudo a cotizarlo.',
               'Muy bien, gracias. Aquí ayudando a armar oficinas. ¿Cómo estás tú?\n¿Buscas algo en especial o te muestro lo que tenemos de entrega inmediata?'
             ]),
-            chips: ['Ver sillas', 'Ver escritorios', '¿Qué puedes hacer?']
+            chips: ['Ver sillas', 'Ver escritorios', '¿Qué puedes hacer?'],
+            pose: 'saluda'
           };
         }
         return {
           html: una([
-            saludoHora() + ', ¿cómo estás? Soy Mariana, de OfficeTure.\n¿Cómo te puedo ayudar hoy?',
+            saludoHora() + ', ¿cómo estás? Soy Turi, de OfficeTure.\n¿Cómo te puedo ayudar hoy?',
             'Hola, qué gusto saludarte. ¿Cómo estás?\nCuéntame qué necesitas para tu oficina y lo vemos juntos.',
             saludoHora() + '. Qué bueno que escribes. ¿En qué te puedo ayudar: sillas, escritorios o equipar una oficina completa?'
           ]),
-          chips: ['Ver sillas', 'Ver escritorios', 'Equipar una oficina']
+          chips: ['Ver sillas', 'Ver escritorios', 'Equipar una oficina'],
+          pose: 'saluda'
         };
       }
       saludo = una(['Hola, qué tal. ', saludoHora() + '. ', 'Hola. ']);
@@ -286,16 +290,16 @@
       return { html: una(['Qué bueno. ¿Qué te gustaría ver para tu oficina?', 'Me da gusto. Dime qué buscas y te paso opciones con precio.']), chips: ['Sillas', 'Escritorios', 'Archivero'] };
     }
     if (/\b(gracias|grax|muy amable|te lo agradezco)\b/.test(t)) {
-      return { html: una(['A ti. Aquí sigo si quieres ver algo más.', 'Con todo gusto. Si te surge otra duda, aquí estoy.']), chips: ['Ver más productos', 'Hablar con Bryan'] };
+      return { html: una(['A ti. Aquí sigo si quieres ver algo más.', 'Con todo gusto. Si te surge otra duda, aquí estoy.']), pose: 'cafe', chips: ['Ver más productos', 'Hablar con Bryan'] };
     }
     if (/\b(adios|bye|hasta luego|nos vemos|eso es todo|es todo)\b/.test(t)) {
-      return { html: 'Gracias por escribir. Que tengas muy buen día, aquí estoy cuando lo necesites.' };
+      return { html: 'Gracias por escribir. Que tengas muy buen día, aquí estoy cuando lo necesites.', pose: 'cafe' };
     }
     if (/\b(eres (un )?(bot|robot|ia|persona|humana|real)|eres humana|hablo con (un )?(bot|robot|persona)|inteligencia artificial)\b/.test(t)) {
-      return { html: 'Soy Mariana, asistente virtual de OfficeTure. Te ayudo con precios, entregas y dudas, y cuando quieras te paso con Bryan López, que es una persona y cierra los pedidos.', chips: ['Hablar con Bryan', '¿Qué puedes hacer?'] };
+      return { html: 'Soy Turi, asistente virtual de OfficeTure. Te ayudo con precios, entregas y dudas, y cuando quieras te paso con Bryan López, que es una persona y cierra los pedidos.', chips: ['Hablar con Bryan', '¿Qué puedes hacer?'] };
     }
     if (/\b(quien eres|como te llamas|tu nombre)\b/.test(t)) {
-      return { html: 'Soy Mariana, la asistente de OfficeTure. Fabricamos y vendemos mobiliario de oficina en San Nicolás de los Garza. ¿Qué te gustaría ver?', chips: ['Sillas', 'Escritorios'] };
+      return { html: 'Soy Turi, asistente de OfficeTure. Fabricamos y vendemos mobiliario de oficina en San Nicolás de los Garza. ¿Qué te gustaría ver?', chips: ['Sillas', 'Escritorios'] };
     }
     if (/\b(que puedes hacer|en que me ayudas|que haces|como funcionas|para que sirves|ayuda)\b/.test(t)) {
       return {
@@ -453,44 +457,44 @@
   var ICO_WA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2zm0 1.8a8.2 8.2 0 1 1-4.2 15.3l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 0 1 12 3.8zm-3.3 4.4c-.2 0-.5 0-.7.3-.3.3-1 1-1 2.3s1 2.7 1.1 2.9c.2.2 2 3.1 4.9 4.3 2.4 1 2.9.8 3.4.7.5 0 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3l-2-1c-.3-.1-.5-.1-.7.1l-.9 1.1c-.2.2-.3.2-.6.1-.3-.2-1.2-.5-2.4-1.5-.9-.8-1.5-1.8-1.6-2.1-.2-.3 0-.5.1-.6l.4-.5.3-.5v-.5l-.9-2.2c-.2-.5-.5-.5-.7-.5h-.6z"/></svg>';
 
   var raiz = document.createElement('div');
-  raiz.className = 'mariana';
+  raiz.className = 'turi';
   raiz.innerHTML =
-    '<div class="mariana-nube" role="status"><b>Hola, soy Mariana.</b> ¿Te ayudo a encontrar algo para tu oficina?<button type="button" aria-label="Cerrar aviso">×</button></div>' +
-    '<section class="mariana-panel" role="dialog" aria-modal="false" aria-label="Chat con Mariana, asistente de OfficeTure">' +
-      '<header class="mariana-cabeza">' +
-        '<div class="mariana-avatar"><img src="' + MASCOTA + '" alt=""></div>' +
-        '<div class="mariana-quien"><b>Mariana</b><span>Asistente de OfficeTure</span></div>' +
-        '<button class="mariana-x" type="button" aria-label="Cerrar chat">' + ICO_X + '</button>' +
+    '<div class="turi-nube" role="status"><b>Hola, soy Turi.</b> ¿Te ayudo a encontrar algo para tu oficina?<button type="button" aria-label="Cerrar aviso">×</button></div>' +
+    '<section class="turi-panel" role="dialog" aria-modal="false" aria-label="Chat con Turi, asistente de OfficeTure">' +
+      '<header class="turi-cabeza">' +
+        '<div class="turi-avatar"><img src="' + POSE.cara + '" alt=""></div>' +
+        '<div class="turi-quien"><b>Turi</b><span>Asistente de OfficeTure</span></div>' +
+        '<button class="turi-x" type="button" aria-label="Cerrar chat">' + ICO_X + '</button>' +
       '</header>' +
-      '<div class="mariana-log" aria-live="polite"></div>' +
-      '<div class="mariana-chips"></div>' +
-      '<footer class="mariana-pie">' +
-        '<form class="mariana-forma" autocomplete="off">' +
+      '<div class="turi-log" aria-live="polite"></div>' +
+      '<div class="turi-chips"></div>' +
+      '<footer class="turi-pie">' +
+        '<form class="turi-forma" autocomplete="off">' +
           '<input type="text" name="m" placeholder="Escribe tu mensaje" aria-label="Tu mensaje" maxlength="300">' +
           '<button type="submit" aria-label="Enviar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg></button>' +
         '</form>' +
-        '<div class="mariana-legal"><span>Asistente virtual · versión de prueba</span><a class="mariana-wa" href="' + WA + '" target="_blank" rel="noopener">' + ICO_WA + 'WhatsApp</a></div>' +
+        '<div class="turi-legal"><span>Asistente virtual · versión de prueba</span><a class="turi-wa" href="' + WA + '" target="_blank" rel="noopener">' + ICO_WA + 'WhatsApp</a></div>' +
       '</footer>' +
     '</section>' +
-    '<button class="mariana-lanzador" type="button" aria-label="Abrir chat con Mariana" aria-expanded="false">' +
-      '<img src="' + MASCOTA + '" alt="">' +
+    '<button class="turi-lanzador" type="button" aria-label="Abrir chat con Turi" aria-expanded="false">' +
+      '<span class="turi-cuerpo"><img class="p-quieto" src="' + POSE.quieto + '" alt=""><img class="p-saluda" src="' + POSE.saluda + '" alt=""></span>' +
       '<svg class="cerrar-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>' +
     '</button>';
   document.body.appendChild(raiz);
-  document.body.classList.add('con-mariana');
+  document.body.classList.add('con-turi');
 
-  var log = raiz.querySelector('.mariana-log');
-  var chips = raiz.querySelector('.mariana-chips');
-  var forma = raiz.querySelector('.mariana-forma');
+  var log = raiz.querySelector('.turi-log');
+  var chips = raiz.querySelector('.turi-chips');
+  var forma = raiz.querySelector('.turi-forma');
   var entrada = forma.querySelector('input');
-  var lanzador = raiz.querySelector('.mariana-lanzador');
-  var nube = raiz.querySelector('.mariana-nube');
-  var waPie = raiz.querySelector('.mariana-wa');
+  var lanzador = raiz.querySelector('.turi-lanzador');
+  var nube = raiz.querySelector('.turi-nube');
+  var waPie = raiz.querySelector('.turi-wa');
   var ocupado = false;
   var historial = [];
 
   function guardar() {
-    try { sessionStorage.setItem('mariana', JSON.stringify({ h: historial.slice(-40), e: estado })); } catch (e) { /* sin almacenamiento */ }
+    try { sessionStorage.setItem('turi', JSON.stringify({ h: historial.slice(-40), e: estado })); } catch (e) { /* sin almacenamiento */ }
   }
 
   function pintar(m) {
@@ -498,6 +502,13 @@
     div.className = 'm-msg ' + (m.de === 'tu' ? 'm-tu' : 'm-bot');
     if (m.de === 'tu') div.textContent = m.texto;
     else div.innerHTML = m.html;
+    if (m.pose && POSE[m.pose]) {
+      div.insertAdjacentHTML('afterbegin', '<img class="m-turi" src="' + POSE[m.pose] + '" alt="">');
+    }
+    if (m.bienvenida) {
+      div.classList.add('m-bienvenida');
+      div.insertAdjacentHTML('afterbegin', '<img class="m-turi-grande" src="' + POSE.saluda + '" alt="Turi te saluda">');
+    }
     if (m.boton) {
       var a = document.createElement('a');
       a.className = 'm-wa-btn';
@@ -527,9 +538,10 @@
   }
 
   function decir(r) {
-    var m = { de: 'bot', html: r.html, boton: !!r.boton };
+    var m = { de: 'bot', html: r.html, boton: !!r.boton, pose: r.pose, bienvenida: !!r.bienvenida };
     historial.push(m);
     pintar(m);
+    brinca();
     ponerChips(r.chips);
     waPie.href = waLink();
     guardar();
@@ -540,8 +552,8 @@
     ponerChips([]);
     var puntos = document.createElement('div');
     puntos.className = 'm-escribe';
-    puntos.setAttribute('aria-label', 'Mariana está escribiendo');
-    puntos.innerHTML = '<i></i><i></i><i></i>';
+    puntos.setAttribute('aria-label', 'Turi está escribiendo');
+    puntos.innerHTML = '<img src="' + POSE.laptop + '" alt=""><span><i></i><i></i><i></i></span>';
     log.appendChild(puntos);
     log.scrollTop = log.scrollHeight;
     var largo = r.html.replace(/<[^>]+>/g, '').length;
@@ -567,7 +579,8 @@
 
   function bienvenida() {
     escribiendo({
-      html: saludoHora() + ', soy Mariana, asistente de OfficeTure.\nTe ayudo con precios, entregas y dudas de nuestros muebles de oficina. ¿Qué estás buscando?',
+      bienvenida: true,
+      html: saludoHora() + ', soy Turi, asistente de OfficeTure.\nTe ayudo con precios, entregas y dudas de nuestros muebles de oficina. ¿Qué estás buscando?',
       chips: ['Ver sillas', 'Ver escritorios', 'Equipar una oficina', 'Hablar con Bryan']
     });
   }
@@ -577,22 +590,22 @@
     lanzador.setAttribute('aria-expanded', 'true');
     lanzador.setAttribute('aria-label', 'Cerrar chat');
     nube.classList.remove('ver');
-    try { sessionStorage.setItem('mariana-nube', '1'); } catch (e) { /* sin almacenamiento */ }
+    try { sessionStorage.setItem('turi-nube', '1'); } catch (e) { /* sin almacenamiento */ }
     if (!historial.length) bienvenida();
     if (window.matchMedia('(min-width: 560px)').matches) setTimeout(function () { entrada.focus(); }, 200);
   }
   function cerrar() {
     raiz.classList.remove('abierta');
     lanzador.setAttribute('aria-expanded', 'false');
-    lanzador.setAttribute('aria-label', 'Abrir chat con Mariana');
+    lanzador.setAttribute('aria-label', 'Abrir chat con Turi');
   }
 
   lanzador.addEventListener('click', function () { raiz.classList.contains('abierta') ? cerrar() : abrir(); });
-  raiz.querySelector('.mariana-x').addEventListener('click', cerrar);
+  raiz.querySelector('.turi-x').addEventListener('click', cerrar);
   nube.addEventListener('click', function (e) {
     if (e.target.tagName === 'BUTTON') {
       nube.classList.remove('ver');
-      try { sessionStorage.setItem('mariana-nube', '1'); } catch (er) { /* sin almacenamiento */ }
+      try { sessionStorage.setItem('turi-nube', '1'); } catch (er) { /* sin almacenamiento */ }
       return;
     }
     abrir();
@@ -602,7 +615,7 @@
 
   // retomar la conversación al cambiar de página
   try {
-    var previo = JSON.parse(sessionStorage.getItem('mariana') || 'null');
+    var previo = JSON.parse(sessionStorage.getItem('turi') || 'null');
     if (previo && previo.h && previo.h.length) {
       historial = previo.h;
       Object.keys(previo.e || {}).forEach(function (k) { estado[k] = previo.e[k]; });
@@ -614,11 +627,32 @@
 
   // la nube de saludo aparece una vez por visita
   var vioNube = false;
-  try { vioNube = sessionStorage.getItem('mariana-nube') === '1'; } catch (e) { /* sin almacenamiento */ }
+  try { vioNube = sessionStorage.getItem('turi-nube') === '1'; } catch (e) { /* sin almacenamiento */ }
   if (!vioNube && !historial.length) {
-    setTimeout(function () { if (!raiz.classList.contains('abierta')) nube.classList.add('ver'); }, 3500);
+    setTimeout(function () {
+      if (raiz.classList.contains('abierta')) return;
+      nube.classList.add('ver');
+      saluda();
+    }, 3500);
   }
 
-  // para probar desde la consola: Mariana.probar('hola, cuánto cuesta la silla ergo')
-  window.Mariana = { abrir: abrir, cerrar: cerrar, probar: function (t) { var r = responder(t); return r && r.html.replace(/<[^>]+>/g, ' '); } };
+  // Turi saluda con la mano al aparecer la nube y luego cada tanto mientras el chat está cerrado
+  function saluda() {
+    if (reducido || raiz.classList.contains('abierta')) return;
+    lanzador.classList.add('saluda');
+    setTimeout(function () { lanzador.classList.remove('saluda'); }, 2400);
+  }
+  setInterval(saluda, 14000);
+
+  // el avatar del encabezado da un brinquito cada vez que Turi contesta
+  var avatar = raiz.querySelector('.turi-avatar');
+  function brinca() {
+    if (reducido) return;
+    avatar.classList.remove('brinca');
+    void avatar.offsetWidth;
+    avatar.classList.add('brinca');
+  }
+
+  // para probar desde la consola: Turi.probar('hola, cuánto cuesta la silla ergo')
+  window.Turi = { abrir: abrir, cerrar: cerrar, probar: function (t) { var r = responder(t); return r && r.html.replace(/<[^>]+>/g, ' '); } };
 })();
