@@ -378,6 +378,43 @@ body.menu-abierto .barra .logo-claro{opacity:1}
 }
 @media (prefers-reduced-motion:reduce){.plano{transition:none}.plano .pod,.plano .zona-g{transition:none}.plano .pop{animation:none}}
 
+/* ---------- marca (adelanto del branding) ---------- */
+.marca{background:var(--marfil);padding:96px 0}
+.marca-rejilla{display:grid;gap:14px}
+.marca-tarjeta{position:relative;border-radius:var(--radio);overflow:hidden;margin:0;display:grid;min-height:220px}
+.marca-tarjeta small{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;font-weight:500;color:var(--sage)}
+.marca-tarjeta figcaption{padding:0;font-size:14px;color:var(--texto);line-height:1.45;display:grid;gap:6px}
+.marca-iso{background:var(--madera);aspect-ratio:1;place-items:center;padding:12%;color:var(--marfil)}
+.marca-iso img{width:min(100%,420px);height:auto;filter:none}
+.marca-iso figcaption{position:absolute;left:24px;bottom:22px;color:rgba(239,234,224,.9)}
+.marca-iso small{color:rgba(239,234,224,.65)}
+.marca-logo{background:var(--crema);border:1px solid var(--linea);place-items:center;padding:12% 10% 64px}
+.marca-logo img{width:min(100%,520px);height:auto}
+.marca-logo figcaption{position:absolute;left:24px;bottom:22px}
+.marca-paleta{background:#fff;border:1px solid var(--linea);padding:22px 24px 24px;gap:16px;align-content:start}
+.marca-paleta ul{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;height:150px}
+.marca-paleta li{position:relative;background:var(--c);border-radius:14px;border:1px solid rgba(31,36,27,.08)}
+.marca-paleta li span{position:absolute;left:0;right:0;bottom:-22px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:500;color:var(--tenue);text-align:center;white-space:nowrap}
+.marca-paleta ul{margin-bottom:26px}
+.marca-tipo{background:var(--oliva);color:var(--marfil);padding:22px 24px 24px;gap:8px;align-content:space-between}
+.marca-tipo small{color:var(--sage-claro)}
+.marca-tipo b{font-weight:600;font-size:clamp(96px,22vw,150px);line-height:.9;letter-spacing:-.05em;color:var(--marfil)}
+.marca-tipo span{font-size:13px;letter-spacing:.04em;color:var(--sage-claro)}
+.marca-nota{margin-top:28px;font-size:12.5px;color:var(--tenue);max-width:60ch}
+@media (min-width:760px){
+  .marca{padding:130px 0}
+  .marca-rejilla{grid-template-columns:5fr 7fr;grid-template-rows:auto auto;gap:20px}
+  .marca-iso{grid-row:1/3;aspect-ratio:auto;min-height:520px}
+  .marca-logo{min-height:280px}
+  .marca-rejilla>.marca-paleta,.marca-rejilla>.marca-tipo{min-height:220px}
+}
+@media (min-width:1000px){
+  .marca-rejilla{grid-template-columns:5fr 4fr 3fr}
+  .marca-iso{grid-row:1/3}
+  .marca-logo{grid-column:2/4}
+  .marca-tarjeta figcaption{font-size:15px}
+}
+
 /* ---------- 03 proyectos ---------- */
 .proyectos{background:var(--oliva);color:rgba(239,234,224,.82);padding:96px 0}
 .proyectos h2,.proyectos h3{color:var(--marfil)}
