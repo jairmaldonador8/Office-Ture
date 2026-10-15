@@ -31,10 +31,25 @@
   var hero = document.getElementById('inicio');
   var TRAMO = 260;           /* píxeles de scroll en los que el logo pasa de grande a chico */
   var pAnterior = -1;
+  var yAnterior = 0;
+  var subiendo = false;
   var pendiente = false;
+  var fila = barra.querySelector('.barra-fila');
+
+  /* distancia del botón de menú (izquierda) al centro de la barra, para que en
+     escritorio ocupe el lugar del sello al bajar */
+  function medirDx() {
+    if (!fila || !ham) return;
+    var dx = fila.clientWidth / 2 - (ham.offsetLeft + ham.offsetWidth / 2);
+    barra.style.setProperty('--dx', Math.round(dx) + 'px');
+  }
   function pintarBarra() {
     pendiente = false;
     var y = window.scrollY || 0;
+    var dy = y - yAnterior;
+    if (dy < -3) subiendo = true; else if (dy > 3) subiendo = false;
+    yAnterior = y;
+    barra.classList.toggle('subiendo', subiendo);
     var p = Math.min(1, Math.max(0, y / TRAMO));
     if (reducido) p = p > 0.5 ? 1 : 0;
     p = 1 - (1 - p) * (1 - p);   /* ease-out: se encoge rápido al principio y asienta suave */
@@ -53,7 +68,8 @@
     window.requestAnimationFrame(pintarBarra);
   }
   window.addEventListener('scroll', alScroll, { passive: true });
-  window.addEventListener('resize', alScroll);
+  window.addEventListener('resize', function () { medirDx(); alScroll(); });
+  medirDx();
   pintarBarra();
 
   /* ---- video de portada: si carga, sustituye a las fotos en movimiento ---- */
