@@ -298,36 +298,18 @@ body.menu-abierto .barra .logo-claro{opacity:1;visibility:visible}
 }
 @media (prefers-reduced-motion:reduce){.gal-foto img,.gal-pieza img{transition:none}}
 
-/* ---------- 03 proyectos: la oficina se monta con el scroll ----------
-   Tres fotos del mismo espacio encimadas (antes arriba, después abajo). js/montaje.js
-   vuelve transparente la de encima conforme bajas, así la oficina se va armando:
-   vacía, en instalación y terminada. La foto se queda fija mientras pasan los pasos.
-   En el teléfono la foto llena la pantalla y cada paso sube sobre ella, abajo. */
-.montaje{position:relative;background:var(--tinta);color:var(--marfil)}
-.mt-rejilla{display:grid}
-.mt-escena{position:sticky;top:0;align-self:start;height:100vh;height:100svh;overflow:hidden;z-index:0}
-.mt-capa{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:var(--foto);will-change:opacity,transform}
-.mt-escena::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(31,36,27,.25) 0%,rgba(31,36,27,0) 30%,rgba(31,36,27,.88) 80%)}
-.mt-indice{position:absolute;left:20px;top:18px;z-index:2;display:flex;gap:6px}
-.mt-indice i{width:28px;height:2px;background:rgba(239,234,224,.3);transition:background .4s}
-.mt-indice i.activa{background:var(--marfil)}
-.mt-pasos{position:relative;z-index:1;margin-top:-100vh;margin-top:-100svh}
-.mt-paso{min-height:100vh;min-height:100svh;display:grid;align-content:end;gap:14px;padding:40px var(--gutter) 72px}
-.mt-paso .num{font-size:clamp(70px,12vw,150px);font-weight:200;letter-spacing:-.06em;line-height:.8;color:rgba(239,234,224,.25);transition:color .6s}
-.mt-paso.activa .num{color:var(--beige)}
-.mt-paso h3{color:var(--marfil);font-size:clamp(30px,4vw,52px);letter-spacing:-.04em}
-.mt-paso p{color:rgba(239,234,224,.78);max-width:34ch;font-size:16px}
-.mt-intro .ceja{color:var(--sage-claro);margin:0}
-.mt-intro h2{color:var(--marfil);font-size:clamp(38px,6vw,84px);letter-spacing:-.05em;line-height:.95;max-width:12ch}
-.mt-intro h2 em{color:var(--beige)}
-@media (min-width:900px){
-  .mt-rejilla{grid-template-columns:1fr 1.2fr}
-  .mt-escena{grid-column:2;grid-row:1}
-  .mt-escena::after{background:linear-gradient(90deg,rgba(31,36,27,.35),rgba(31,36,27,0) 30%)}
-  .mt-indice{left:32px;top:auto;bottom:32px}
-  .mt-pasos{grid-column:1;grid-row:1;margin-top:0}
-  .mt-paso{align-content:center;padding:0 64px}
-}
+/* ---------- 03 proyectos: video de la oficina armándose ----------
+   Un solo video (sin audio) de cómo se equipa el espacio. js/obra.js lo reproduce cuando
+   entra en pantalla y lo deja en la oficina terminada; al volver a la sección empieza otra vez. */
+.obra{padding:96px 0;background:var(--tinta);color:var(--marfil)}
+.obra-cabeza{margin-bottom:34px}
+.obra .ceja{color:var(--sage-claro)}
+.obra h2{color:var(--marfil);font-size:clamp(38px,6vw,84px);letter-spacing:-.05em;line-height:.95;max-width:13ch}
+.obra h2 em{color:var(--beige)}
+.obra-video{margin:0;border-radius:8px;overflow:hidden;background:#000;aspect-ratio:16/9;box-shadow:0 40px 80px -40px rgba(0,0,0,.6)}
+.obra-video video{display:block;width:100%;height:100%;object-fit:cover}
+@media (max-width:759px){.obra .cont{width:100%}.obra-cabeza{padding:0 var(--gutter)}.obra-video{border-radius:0}}
+@media (min-width:760px){.obra{padding:130px 0}.obra-cabeza{margin-bottom:48px}}
 
 /* ---------- 04 proceso ---------- */
 .proceso{padding:96px 0}
