@@ -1,30 +1,39 @@
-# Página de catálogo
+# Página de catálogo, formato revista
 
-Fecha: 15-oct-2026. Sustituye a la rejilla de sillería dentro de inventario (spec del mismo día), que Jair descartó: «se ve como lista, no como catálogo» y «está enterrado dentro de inventario».
+Fecha: 15-oct-2026. Tres iteraciones el mismo día:
 
-## Decisión
+1. Rejilla de sillería dentro de inventario. Descartada: «se ve como lista, no como catálogo».
+2. Página propia `catalogo.html` con cuatro capítulos en rejilla editorial (estilo hay.com). Descartada: Jair pidió «algo con personalidad, que parezca una revista premium» y mandó dos referencias generadas con ChatGPT (portada de catálogo y doble página).
+3. **Esta versión**: catálogo como revista, con la paleta del cliente.
 
-Página propia `catalogo.html`, enlazada como «Catálogo» desde el menú, el menú móvil y el pie de todas las páginas. Inventario y Equipa siguen siendo las dos líneas (showroom y maqueta); el catálogo es el documento que el cliente manda en el primer contacto, ahora en la web.
+## Decisión de paleta
 
-## Estructura
+La referencia usa menta `#a0ccc7`, azul cielo `#92b1e7`, blanco y negro, que son los colores que el cliente sigue usando (doc del kick-off). Jair eligió tomarla tal cual: el catálogo es la primera pieza viva de la variante con la paleta del cliente, para que los dueños la comparen contra el resto del sitio en oliva y terracota. Se implementa redefiniendo las variables de color en `body.catalogo`, sin tocar el resto del sitio: fondo «mesa» `#e6e1d8`, papel blanco, acento verde `#3f9284` para la palabra del titular, botones negros, wordmark negro en la barra y el pie, isotipo menta.
 
-1. **Portada**: ceja «Catálogo · octubre de 2026», h1 «Todo lo que *fabricamos.*», bajada e índice numerado de capítulos con conteo de modelos. Foto panorámica 21:9 del escritorio ejecutivo en nogal con pie.
-2. **Barra de capítulos pegajosa** bajo la barra fija (76 px en móvil, 68 px en escritorio), con el capítulo visible subrayado por `IntersectionObserver`.
-3. **Cuatro capítulos**, cada uno con número grande en beige, ceja, titular con una palabra en cursiva terracota, bajada y un dato a la derecha (entrega, precio desde, oficinas equipadas):
-   - 01 Escritorios: lineal con cajonera ($2,750, destacado), escuadra (a cotizar, tres acabados), semiejecutivo en L ($11,500), ejecutivo con librero ($14,200), dirección en U (a la medida).
-   - 02 Sillería: los once modelos del cliente, gerencial destacada, «desde $1,490» en el dato del capítulo.
-   - 03 Almacenaje: archivero vertical ($5,200, tres acabados, destacado) y credenza con librero (a la medida).
-   - 04 Equipamiento: estaciones de trabajo (destacado), recepción, oficinas privadas, salas de juntas y áreas comunes; enlace a «Arma tu oficina».
-4. **Cierre**: tarjeta oliva de cotización en 30 minutos y pie.
+## Estructura: seis pliegos
 
-## Tarjeta de producto
+Cada pliego es una hoja blanca con sombra, cabecera corrida en versalitas y folio en la esquina.
 
-Foto con esquinas de 4 px (4:5; el destacado 4:3 y ocupa dos columnas y dos filas), línea fina, nombre en Poppins 500, descripción corta, acabados como puntos de color cuando aplica, y pie con precio o nota («A la medida», «Según medida», «En inventario») y enlace «Cotizar» a WhatsApp con el modelo escrito. Las sillas van sobre tarjeta blanca con la foto contenida. Rejilla de 2 columnas en 390 px, 3 desde 760 px y 4 desde 1000 px.
+| Folio | Contenido |
+|---|---|
+| 01 | Portada: isotipo menta y wordmark negro (SVG inline, `#i-wordmark`), «Mobiliario de oficina · Catálogo 2026», titular «Espacios que te acompañan.», bajada, índice de capítulos. Foto del escritorio ejecutivo recortada con la forma del isotipo (`clip-path: url(#clip-iso)`) sobre una mancha azul. |
+| 02 | Intro: «Mobiliario para espacios reales.», bajada, etiquetas Trabajar / Reunir / Recibir / Guardar, foto a sangre. Panel menta «Sillería · Soporte para ideas más grandes» con la silla gerencial flotando, código, nombre y «desde $1,490». |
+| 03 | Escritorios: panel azul con título, subtítulo, texto y botón de contorno; foto grande; cinco tarjetas con código OT-ES01 a 05. |
+| 04 | Sillería: panel menta invertido, silla ejecutiva sobre gris; once tarjetas OT-SI01 a 11 en cuatro columnas. |
+| 05 | Almacenaje (panel azul, archivero, tres tarjetas OT-AL) y Equipamiento (panel menta, estaciones, tres tarjetas OT-EQ, botón «Arma tu oficina»). |
+| 06 | Contraportada negra: logo, «Cotización en 30 minutos.», botón menta de WhatsApp y datos de contacto. |
+
+## Componentes
+
+- **Panel de color** (`.rev-panel`): esquina inferior grande (110 px) y un círculo blanco translúcido como mancha; texto alineado arriba; botón de contorno negro con flecha.
+- **Tarjeta de producto** (`.rev-prod`): foto 4:3 sobre gris `#f1f0ec` con esquinas de 12 px, código en versalitas, nombre y precio o nota. Toda la tarjeta enlaza a WhatsApp con el modelo escrito.
+- **Sillas con fondo transparente**: `img/silla-*.webp` ahora llevan alfa (se quita solo el blanco conectado a los bordes, con 1 px de borde suave) para que floten sobre los paneles.
+- **Códigos OT-xx00**: son una convención propuesta para que el catálogo se lea como tal; no existen en el negocio del cliente todavía.
 
 ## Verificación
 
-Playwright a 390 × 844 y 1440 × 900: sin scroll horizontal, 22 imágenes cargan, la barra pegajosa queda a 76 / 68 px bajo la barra fija y marca el capítulo activo, los enlaces del índice llevan al capítulo con margen para no quedar bajo las barras.
+Playwright a 390 × 844 y 1440 × 900: sin scroll horizontal, 22 imágenes cargan, la portada, el panel destacado y el capítulo de sillería revisados en ambos tamaños.
 
 ## Fuera de alcance
 
-Ficha de producto con detalle, PDF descargable, precios por silla. Pendientes con el cliente: nombres y textos de cada pieza, precios vigentes.
+Ficha de detalle por producto, PDF descargable, precios por silla, nombres definitivos. Pendiente con el cliente: validar textos, precios y los códigos.

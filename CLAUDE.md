@@ -64,3 +64,7 @@ Una sola superficie clara `--fondo:#f4f1ea`, esquinas casi rectas (`--radio:4px`
 3. Elegir y comprar dominio.
 4. Textos finales, precios vigentes y fotos de los productos de entrega inmediata (falta foto real del archivero).
 5. Confirmar horario y qué WhatsApp recibe las cotizaciones y los proveedores.
+
+## Catálogo en formato revista (15-oct-2026)
+
+Los dueños mandaron el doc del kick-off (`docs.google.com/document/d/1EDFzy3WGfr0cNmW7CkO-RzDEfAS2My2QJYvABIxtrN8`) donde dicen que **siguen usando y les gusta su paleta vieja** (menta `#a0ccc7`, azul cielo `#92b1e7`, blanco, negro). Jair decidió probar **ambas paletas**: el sitio sigue en oliva y terracota, y `catalogo.html` es la primera pieza viva con la paleta del cliente, en formato revista premium (hojas blancas con folio, paneles menta y azul con esquina orgánica, foto de portada recortada con la forma del isotipo, códigos OT-xx00 propuestos). Las variables se redefinen en `body.catalogo`; el resto del sitio no cambia. Spec en `docs/ultrapowers/specs/2026-10-15-catalogo-design.md`. También se mandaron once fotos de sillería con nombre (gerencial, ejecutiva, secretarial, operativa, industrial alta y baja, visita, comedor, sillón de espera de 1 y 2 plazas, mesabanco), ya en `img/silla-*.webp` con fondo transparente. El menú «Catálogo» apunta a `catalogo.html`; `inventario.html` y `equipa.html` siguen como las dos líneas. Pendiente: la variante menta y azul de la campaña del deck (camino acordado: recolorear los mockups existentes con `mockups.py`).
