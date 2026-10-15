@@ -93,6 +93,8 @@ export async function ejecutarEscalacion(conversacionId: string, esc: Escalacion
     resumen: esc.resumen,
     urgencia: esc.urgencia,
     tipoCliente: esc.tipoCliente,
+    // Una espera nueva empieza sin atender; la marca de una espera anterior ya no aplica.
+    escaladoSinAtender: false,
   });
   // Idempotencia: turno reintentado o llamada doble con la misma espera y su alerta aún sin atender.
   if (conv.modo === "esperando_humano" && conv.motivoModo === esc.motivo) {

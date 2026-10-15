@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { recortarBytes } from "../../src/canales/instagram.js";
 import { type EcoHumano, ErrorMeta, type EventoCanal } from "../../src/canales/tipos.js";
 import { parsearWhatsApp } from "../../src/canales/whatsapp.js";
+import { vencerModos } from "../../src/flujo/cron.js";
 import { procesarEvento, procesarLote } from "../../src/flujo/entrada.js";
 import { enviarAlCliente } from "../../src/flujo/enviar.js";
 import { depsDePrueba, INICIO, mensajeWa } from "./apoyo.js";
@@ -600,5 +601,145 @@ describe("procesarLote", () => {
     await procesarLote([mensajeWa("", { tipo: "imagen", mediaId: "m1", mime: "image/jpeg" })], deps);
     const { conv } = await conversacion(repo);
     expect((await repo.mensajesDelHilo(conv.id, 1))[0]?.texto).toBe("[no se pudo descargar la imagen]");
+  });
+});
+
+describe("revisión final: contactos, cierres y /bot", () => {
+  const DUENO = "5218111111111";
+  const alertaBase = {
+    motivo: "listo_para_comprar",
+    texto: "OfficeTure · Listo para comprar\nCliente: Laura",
+    enviadaA: DUENO,
+    enviadaEn: INICIO,
+    reintentos: 0,
+    diferida: false,
+  };
+
+  it("dos primeros mensajes al mismo tiempo: un contacto, una conversación, ambos mensajes y un turno", async () => {
+    const { deps, repo } = depsDePrueba();
+    await Promise.all([
+      procesarEvento(mensajeWa("hola"), deps),
+      procesarEvento(mensajeWa("precio de sillas"), deps),
+    ]);
+    expect(repo.contactos.size).toBe(1);
+    expect(repo.conversaciones.size).toBe(1);
+    const { conv } = await conversacion(repo);
+    expect((await repo.mensajesDelHilo(conv.id, 1)).map((m) => m.texto).sort()).toEqual([
+      "hola",
+      "precio de sillas",
+    ]);
+    expect(conv.responderEn).toEqual(new Date(INICIO.getTime() + 4000));
+  });
+
+  for (const [comando, modo] of [
+    ["/ganado", "esperando_humano"],
+    ["/perdido se fue con otro", "humano"],
+  ] as const) {
+    it(`${comando} en modo ${modo}: regresa a bot sin vencimiento y atiende alertas`, async () => {
+      const { deps, repo, wa, reloj } = depsDePrueba();
+      await procesarEvento(mensajeWa("hola"), deps);
+      const { conv } = await conversacion(repo);
+      await repo.actualizarConversacion(conv.id, {
+        modo,
+        motivoModo: "listo_para_comprar",
+        modoHasta: new Date(INICIO.getTime() + 7_200_000),
+        responderEn: undefined,
+      });
+      await repo.crearAlerta({ ...alertaBase, conversacionId: conv.id, idExterno: "wamid.alerta" });
+      await procesarEvento(mensajeWa(comando, { de: DUENO, citaId: "wamid.alerta" }), deps);
+      const c = await repo.obtenerConversacion(conv.id);
+      expect(c.modo).toBe("bot");
+      expect(c.modoHasta).toBeUndefined();
+      expect(c.motivoModo).toBeUndefined();
+      expect(repo.alertas.every((a) => a.atendidaEn)).toBe(true);
+      // El vencimiento ya no le escribe ni la cuenta como escalación sin atender.
+      reloj.avanzar(7_200_001);
+      await vencerModos(deps);
+      expect(wa.textos("5218112345678")).toEqual([]);
+      expect((await repo.obtenerLead(conv.id)).escaladoSinAtender).toBe(false);
+    });
+  }
+
+  it("/pausa no cambia con /ganado: sigue en pausa", async () => {
+    const { deps, repo } = depsDePrueba();
+    await procesarEvento(mensajeWa("hola"), deps);
+    const { conv } = await conversacion(repo);
+    await repo.actualizarConversacion(conv.id, { modo: "pausado" });
+    await procesarEvento(mensajeWa("/ganado 8112345678", { de: DUENO }), deps);
+    expect((await repo.obtenerConversacion(conv.id)).modo).toBe("pausado");
+  });
+
+  it("/bot con el cliente sin respuesta y la ventana abierta agenda un turno y limpia la escalación", async () => {
+    const { deps, repo, reloj } = depsDePrueba();
+    await procesarEvento(mensajeWa("hola"), deps);
+    const { conv } = await conversacion(repo);
+    await repo.actualizarConversacion(conv.id, {
+      modo: "esperando_humano",
+      modoHasta: new Date(INICIO.getTime() + 7_200_000),
+      responderEn: undefined,
+    });
+    await repo.actualizarLead(conv.id, { escaladoSinAtender: true });
+    await repo.crearAlerta({ ...alertaBase, conversacionId: conv.id, idExterno: "wamid.alerta" });
+    reloj.avanzar(60_000);
+    await procesarEvento(mensajeWa("/bot", { de: DUENO, citaId: "wamid.alerta" }), deps);
+    const c = await repo.obtenerConversacion(conv.id);
+    expect(c.modo).toBe("bot");
+    expect(c.responderEn).toEqual(deps.ahora());
+    expect((await repo.obtenerLead(conv.id)).escaladoSinAtender).toBe(false);
+    expect(repo.alertas.every((a) => a.atendidaEn)).toBe(true);
+  });
+
+  it("/bot sin mensaje pendiente del cliente no agenda turno", async () => {
+    const { deps, repo } = depsDePrueba();
+    await procesarEvento(mensajeWa("hola"), deps);
+    const { conv } = await conversacion(repo);
+    await repo.guardarMensaje({
+      conversacionId: conv.id,
+      hilo: 1,
+      autor: "bot",
+      tipo: "texto",
+      texto: "Hola",
+    });
+    await repo.actualizarConversacion(conv.id, { modo: "humano", responderEn: undefined });
+    await procesarEvento(mensajeWa("/bot 8112345678", { de: DUENO }), deps);
+    expect((await repo.obtenerConversacion(conv.id)).responderEn).toBeUndefined();
+  });
+
+  it("/bot con la ventana de 24 h cerrada no agenda turno", async () => {
+    const { deps, repo, reloj } = depsDePrueba();
+    await procesarEvento(mensajeWa("hola"), deps);
+    const { conv } = await conversacion(repo);
+    await repo.actualizarConversacion(conv.id, { modo: "humano", responderEn: undefined });
+    reloj.avanzar(25 * 3_600_000);
+    await procesarEvento(mensajeWa("/bot 8112345678", { de: DUENO }), deps);
+    expect((await repo.obtenerConversacion(conv.id)).responderEn).toBeUndefined();
+  });
+
+  it("el eco de Bryan limpia la escalación sin atender", async () => {
+    const { deps, repo } = depsDePrueba();
+    await procesarEvento(mensajeWa("hola"), deps);
+    const { conv } = await conversacion(repo);
+    await repo.actualizarLead(conv.id, { escaladoSinAtender: true });
+    await procesarEvento(
+      {
+        clase: "eco",
+        e: { canal: "whatsapp", idExterno: "wamid.eco", para: "5218112345678", texto: "Hola", fecha: "" },
+      },
+      deps,
+    );
+    expect((await repo.obtenerLead(conv.id)).escaladoSinAtender).toBe(false);
+  });
+
+  it("un cliente frío que vuelve a escribir regresa a un estado con seguimiento", async () => {
+    const { deps, repo } = depsDePrueba();
+    await procesarEvento(mensajeWa("hola"), deps);
+    const { conv } = await conversacion(repo);
+    await repo.actualizarConversacion(conv.id, { estado: "frio" });
+    await procesarEvento(mensajeWa("sigo interesada"), deps);
+    expect((await repo.obtenerConversacion(conv.id)).estado).toBe("nuevo");
+    await repo.actualizarConversacion(conv.id, { estado: "frio" });
+    await repo.actualizarLead(conv.id, { producto: "Silla LITE" });
+    await procesarEvento(mensajeWa("ya me decidí"), deps);
+    expect((await repo.obtenerConversacion(conv.id)).estado).toBe("calificado");
   });
 });

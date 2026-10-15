@@ -42,6 +42,13 @@ describe("ejecutarEscalacion", () => {
     expect(wa.enviados.filter((e) => e.para === "5218122222222")).toHaveLength(0);
   });
 
+  it("una escalación nueva reinicia la marca de escalado sin atender", async () => {
+    const { deps, repo, conv } = await preparar();
+    await repo.actualizarLead(conv.id, { escaladoSinAtender: true });
+    await ejecutarEscalacion(conv.id, esc, deps);
+    expect((await repo.obtenerLead(conv.id)).escaladoSinAtender).toBe(false);
+  });
+
   it("sin ventana del dueño usa la plantilla alerta_bryan con 3 variables sin saltos de línea", async () => {
     const { deps, wa, conv } = await preparar();
     await ejecutarEscalacion(conv.id, esc, deps);

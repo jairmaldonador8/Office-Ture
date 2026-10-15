@@ -146,16 +146,27 @@ export interface Repo {
   eventosPendientes(recibidosAntesDe: Date, limite: number): Promise<EventoGuardado[]>;
 
   contactoPorExterno(canal: Canal, idExterno: string): Promise<Contacto | null>;
+  /** Idempotente por (canal, idExterno): si otro proceso ya lo creó, devuelve ese contacto. */
   crearContacto(c: Omit<Contacto, "id">): Promise<Contacto>;
   actualizarContacto(id: string, cambios: Partial<Omit<Contacto, "id">>): Promise<void>;
   obtenerContacto(id: string): Promise<Contacto>;
 
   conversacionDeContacto(contactoId: string): Promise<Conversacion | null>;
+  /** Idempotente por contacto: si otro proceso ya la creó, devuelve esa conversación. */
   crearConversacion(contactoId: string, canal: Canal): Promise<Conversacion>;
   obtenerConversacion(id: string): Promise<Conversacion>;
   /** Las claves presentes con valor undefined se borran (null en base de datos). */
   actualizarConversacion(id: string, cambios: Partial<Omit<Conversacion, "id">>): Promise<void>;
   conversacionPorReferencia(ref: string): Promise<Conversacion | null>;
+  /**
+   * Suma un toque y fija `ultimoBot` en una sola operación, solo si `toques` y `ultimoCliente`
+   * siguen como en `antes`. Devuelve false si el cliente escribió entretanto (o hubo otro cambio).
+   */
+  sumarToque(
+    id: string,
+    antes: Pick<Conversacion, "toques" | "ultimoCliente">,
+    ultimoBot: Date,
+  ): Promise<boolean>;
 
   guardarMensaje(m: NuevoMensaje): Promise<Mensaje>;
   existeMensajeExterno(idExterno: string): Promise<boolean>;

@@ -493,12 +493,78 @@ describe("textoSeguimiento", () => {
 describe("ejecutarMinuto", () => {
   it("un paso que falla no detiene a los demás", async () => {
     const { deps, repo } = await conConversacion();
-    repo.tomarTurnos = async () => {
+    repo.conversacionesConModoVencido = async () => {
       throw new Error("sin conexión");
     };
     const r = await ejecutarMinuto(deps);
-    expect(r.turnos).toBe("error: sin conexión");
+    expect(r.modos).toBe("error: sin conexión");
     expect(r.seguimientos).toBe(0);
     expect(r).toHaveProperty("resumen");
+  });
+
+  it("corre modos, alertas y resumen primero y como respaldo de pg_cron despacha a lo más un turno, al final", async () => {
+    const p = depsDePrueba({ modelo: modeloGuionado([respuestaTexto("Hola"), respuestaTexto("Hola")]) });
+    await procesarEvento(mensajeWa("hola"), p.deps);
+    await procesarEvento(mensajeWa("hola", { de: "5218119999999", nombre: "Ana" }), p.deps);
+    p.reloj.avanzar(5000);
+    const r = await ejecutarMinuto(p.deps);
+    expect(Object.keys(r)).toEqual(["modos", "alertas", "resumen", "seguimientos", "eventos", "turnos"]);
+    expect(r.turnos).toBe(1);
+    expect(p.wa.textos()).toEqual(["Hola"]);
+  });
+});
+
+describe("revisión final: toques y alertas reenviadas", () => {
+  it("si el cliente contesta mientras sale el toque, no se suma el toque ni se programa el siguiente", async () => {
+    const { deps, repo, wa, reloj, conv } = await conConversacion();
+    await repo.actualizarConversacion(conv.id, { estado: "cotizado", ultimoBot: INICIO });
+    await repo.programarSeguimiento({
+      conversacionId: conv.id,
+      tipo: "toque1",
+      programadoPara: new Date(INICIO.getTime() + 3 * 3_600_000),
+      usarPlantilla: false,
+    });
+    reloj.avanzar(3 * 3_600_000);
+    const original = wa.texto.bind(wa);
+    wa.texto = async (para, texto) => {
+      const id = await original(para, texto);
+      await procesarEvento(mensajeWa("sí, me interesa", { fecha: deps.ahora().toISOString() }), deps);
+      return id;
+    };
+    await procesarSeguimientos(deps);
+    expect(wa.textos()).toHaveLength(1);
+    expect((await repo.obtenerConversacion(conv.id)).toques).toBe(0);
+    expect(repo.seguimientos.filter((s) => !s.cancelado && !s.enviadoEn)).toEqual([]);
+  });
+
+  it("el reenvío queda registrado con su id: citarlo con /bot resuelve la conversación", async () => {
+    const { deps, repo, wa, reloj, conv } = await conConversacion();
+    await repo.actualizarConversacion(conv.id, { modo: "esperando_humano" });
+    await repo.crearAlerta({
+      conversacionId: conv.id,
+      motivo: "queja",
+      texto: "OfficeTure · Queja\nCliente: Laura",
+      enviadaA: "5218111111111",
+      idExterno: "wamid.original",
+      enviadaEn: INICIO,
+      reintentos: 0,
+      diferida: false,
+    });
+    reloj.avanzar(31 * 60_000);
+    await reenviarAlertas(deps);
+    expect(repo.alertas).toHaveLength(3);
+    expect(repo.alertas.slice(1).map((a) => [a.enviadaA, a.idExterno, a.reintentos, a.diferida])).toEqual([
+      ["5218111111111", "out.1", 1, false],
+      ["5218122222222", "out.2", 1, false],
+    ]);
+    // Los reenvíos no se vuelven a reenviar ni cuentan en el resumen.
+    reloj.avanzar(31 * 60_000);
+    expect(await reenviarAlertas(deps)).toBe(0);
+    expect((await repo.resumenDelDia(INICIO)).diferidas).toEqual([]);
+    // El socio cita el reenvío que recibió.
+    await procesarEvento(mensajeWa("/bot", { de: "5218122222222", citaId: "out.2" }), deps);
+    expect((await repo.obtenerConversacion(conv.id)).modo).toBe("bot");
+    expect(wa.textos("5218122222222").at(-1)).toContain("vuelve a atender");
+    expect(repo.alertas.every((a) => a.atendidaEn)).toBe(true);
   });
 });

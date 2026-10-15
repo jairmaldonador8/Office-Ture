@@ -13,6 +13,33 @@ async function conConversacion(repo = new RepoMemoria()) {
 }
 
 describe("RepoMemoria", () => {
+  it("crearContacto y crearConversacion son idempotentes", async () => {
+    const repo = new RepoMemoria();
+    const datos = { canal: "whatsapp", idExterno: "5218112345678", nombre: "Laura" } as const;
+    const [a, b] = await Promise.all([repo.crearContacto(datos), repo.crearContacto(datos)]);
+    expect(b.id).toBe(a.id);
+    expect(repo.contactos.size).toBe(1);
+    const [c1, c2] = await Promise.all([
+      repo.crearConversacion(a.id, "whatsapp"),
+      repo.crearConversacion(a.id, "whatsapp"),
+    ]);
+    expect(c2.id).toBe(c1.id);
+    expect(repo.conversaciones.size).toBe(1);
+  });
+
+  it("sumarToque solo suma si los toques y el último mensaje del cliente no cambiaron", async () => {
+    const { repo, conv } = await conConversacion();
+    const t = new Date(1000);
+    await repo.actualizarConversacion(conv.id, { ultimoCliente: t });
+    expect(await repo.sumarToque(conv.id, { toques: 0, ultimoCliente: t }, new Date(2000))).toBe(true);
+    const c = await repo.obtenerConversacion(conv.id);
+    expect([c.toques, c.ultimoBot]).toEqual([1, new Date(2000)]);
+    expect(await repo.sumarToque(conv.id, { toques: 0, ultimoCliente: t }, new Date(3000))).toBe(false);
+    await repo.actualizarConversacion(conv.id, { ultimoCliente: new Date(4000), toques: 0 });
+    expect(await repo.sumarToque(conv.id, { toques: 0, ultimoCliente: t }, new Date(5000))).toBe(false);
+    expect((await repo.obtenerConversacion(conv.id)).toques).toBe(0);
+  });
+
   it("deduplica eventos", async () => {
     const repo = new RepoMemoria();
     const ev = { clase: "eco", e: { canal: "whatsapp", idExterno: "w1", para: "1", fecha: "" } } as const;

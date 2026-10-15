@@ -222,12 +222,16 @@ export class RepoSupabase implements Repo {
     return f ? contacto(f) : null;
   }
   async crearContacto(c: Omit<Contacto, "id">) {
-    return contacto(
-      unaFila(
-        await this.db.from("contactos").insert(aFila(c, COL_CONTACTO)).select().single(),
-        "crearContacto",
-      ),
-    );
+    // Dos primeros mensajes simultáneos: el segundo no choca (on conflict do nothing) y lee el del primero.
+    const r = await this.db
+      .from("contactos")
+      .upsert(aFila(c, COL_CONTACTO), { onConflict: "canal,id_externo", ignoreDuplicates: true })
+      .select();
+    const [f] = ok(r, "crearContacto") as Fila[];
+    if (f) return contacto(f);
+    const existente = await this.contactoPorExterno(c.canal, c.idExterno);
+    if (!existente) throw new Error("Supabase (crearContacto): sin fila");
+    return existente;
   }
   async actualizarContacto(id: string, cambios: Partial<Omit<Contacto, "id">>) {
     ok(
@@ -249,12 +253,15 @@ export class RepoSupabase implements Repo {
     return f ? conversacion(f) : null;
   }
   async crearConversacion(contactoId: string, canal: Canal) {
-    return conversacion(
-      unaFila(
-        await this.db.from("conversaciones").insert({ contacto_id: contactoId, canal }).select().single(),
-        "crearConversacion",
-      ),
-    );
+    const r = await this.db
+      .from("conversaciones")
+      .upsert({ contacto_id: contactoId, canal }, { onConflict: "contacto_id", ignoreDuplicates: true })
+      .select();
+    const [f] = ok(r, "crearConversacion") as Fila[];
+    if (f) return conversacion(f);
+    const existente = await this.conversacionDeContacto(contactoId);
+    if (!existente) throw new Error("Supabase (crearConversacion): sin fila");
+    return existente;
   }
   async obtenerConversacion(id: string) {
     return conversacion(
@@ -266,6 +273,19 @@ export class RepoSupabase implements Repo {
       await this.db.from("conversaciones").update(aFila(cambios, COL_CONV)).eq("id", id),
       "actualizarConversacion",
     );
+  }
+  async sumarToque(id: string, antes: Pick<Conversacion, "toques" | "ultimoCliente">, ultimoBot: Date) {
+    // Update condicional: si el cliente escribió (toques a 0 y ultimo_cliente nuevo), no toca nada.
+    // ultimo_cliente solo lo escribe la app desde un Date, así que la comparación en milisegundos es exacta.
+    let q = this.db
+      .from("conversaciones")
+      .update({ toques: antes.toques + 1, ultimo_bot: ultimoBot.toISOString() })
+      .eq("id", id)
+      .eq("toques", antes.toques);
+    q = antes.ultimoCliente
+      ? q.eq("ultimo_cliente", antes.ultimoCliente.toISOString())
+      : q.is("ultimo_cliente", null);
+    return (ok(await q.select("id"), "sumarToque") as Fila[]).length > 0;
   }
   async conversacionPorReferencia(ref: string) {
     const usuario = ref.startsWith("@") ? ref.slice(1) : undefined;

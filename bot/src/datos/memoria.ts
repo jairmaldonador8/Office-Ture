@@ -81,6 +81,12 @@ export class RepoMemoria implements Repo {
     return [...this.contactos.values()].find((c) => c.canal === canal && c.idExterno === idExterno) ?? null;
   }
   async crearContacto(c: Omit<Contacto, "id">) {
+    // Igual que el unique (canal, id_externo): si ya existe, se devuelve el existente. Se busca
+    // sin await para que dos llamadas simultáneas no pasen ambas la revisión.
+    const previo = [...this.contactos.values()].find(
+      (x) => x.canal === c.canal && x.idExterno === c.idExterno,
+    );
+    if (previo) return { ...previo };
     const nuevo = { ...c, id: randomUUID() };
     this.contactos.set(nuevo.id, nuevo);
     return { ...nuevo };
@@ -100,6 +106,9 @@ export class RepoMemoria implements Repo {
     return c ? { ...c } : null;
   }
   async crearConversacion(contactoId: string, canal: Canal) {
+    // Igual que el unique de contacto_id: si ya existe, se devuelve la existente.
+    const previa = [...this.conversaciones.values()].find((x) => x.contactoId === contactoId);
+    if (previa) return { ...previa };
     const c: Conversacion = {
       id: randomUUID(),
       contactoId,
@@ -124,6 +133,13 @@ export class RepoMemoria implements Repo {
     if (!c) return;
     aplicar(c, cambios);
     this.actualizado.set(id, this.reloj());
+  }
+  async sumarToque(id: string, antes: Pick<Conversacion, "toques" | "ultimoCliente">, ultimoBot: Date) {
+    const c = this.conversaciones.get(id);
+    if (!c || c.toques !== antes.toques || c.ultimoCliente?.getTime() !== antes.ultimoCliente?.getTime())
+      return false;
+    await this.actualizarConversacion(id, { toques: antes.toques + 1, ultimoBot });
+    return true;
   }
   async conversacionPorReferencia(ref: string) {
     const usuario = ref.startsWith("@") ? ref.slice(1).toLowerCase() : undefined;

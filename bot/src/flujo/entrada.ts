@@ -92,6 +92,9 @@ async function procesarCliente(m: MensajeEntrante, d: Deps): Promise<void> {
   const cambios: Partial<Conversacion> = { ultimoCliente: cuando, toques: 0 };
   if (!conv.primerCliente) cambios.primerCliente = cuando;
   if (!conv.referencia && m.referencia) cambios.referencia = m.referencia;
+  // Un cliente frío que vuelve a escribir recupera los seguimientos; si ya dijo qué busca, va como calificado.
+  if (conv.estado === "frio")
+    cambios.estado = (await d.repo.obtenerLead(conv.id)).producto ? "calificado" : "nuevo";
   if (conv.modo === "bot" || conv.modo === "esperando_humano")
     cambios.responderEn = new Date(ahora.getTime() + DEBOUNCE_MS);
   await d.repo.actualizarConversacion(conv.id, cambios);
@@ -182,7 +185,7 @@ async function procesarEco(e: EcoHumano, d: Deps): Promise<void> {
       responderEn: undefined,
     });
   }
-  await d.repo.atenderAlertas(conv.id, ahora);
+  await atender(conv.id, ahora, d);
   await d.repo.cancelarSeguimientos(conv.id);
   if (previo || e.accion === "borrado") return;
   const tipo = e.tipo ?? "texto";
@@ -205,6 +208,23 @@ const NOTA_ECO: Partial<Record<TipoMensaje, string>> = {
   audio: "[Bryan envió un audio]",
   otro: "[Bryan envió un adjunto]",
 };
+
+/** La ventana de 24 h del cliente sigue abierta: se le puede escribir texto libre. */
+export const ventanaAbierta = (conv: Conversacion, ahora: Date): boolean =>
+  conv.ultimoCliente !== undefined && ahora.getTime() - conv.ultimoCliente.getTime() < horas(24);
+
+/** El último mensaje visible del hilo (sin notas del sistema) es del cliente: espera respuesta. */
+export async function ultimoEsDelCliente(conv: Conversacion, d: Deps): Promise<boolean> {
+  const mensajes = await d.repo.mensajesDelHilo(conv.id, conv.hilo);
+  return mensajes.findLast((m) => m.autor !== "sistema")?.autor === "cliente";
+}
+
+/** Bryan atendió la conversación: sus alertas quedan atendidas y deja de contar como escalación sin atender. */
+async function atender(conversacionId: string, ahora: Date, d: Deps): Promise<void> {
+  await d.repo.atenderAlertas(conversacionId, ahora);
+  if ((await d.repo.obtenerLead(conversacionId)).escaladoSinAtender)
+    await d.repo.actualizarLead(conversacionId, { escaladoSinAtender: false });
+}
 
 const fechaValida = (iso: string): Date | undefined => {
   const f = new Date(iso);
@@ -234,16 +254,23 @@ async function procesarDueno(m: MensajeEntrante, d: Deps): Promise<void> {
   const contacto = await d.repo.obtenerContacto(conv.contactoId);
   const quien = contacto.nombre ?? referenciaCliente(contacto);
   const ahora = d.ahora();
+  const aBot = {
+    modo: "bot",
+    modoHasta: undefined,
+    motivoModo: undefined,
+    avisoEsperaEnviado: false,
+  } satisfies Partial<Conversacion>;
+  // Un cierre saca la conversación de la espera: si no, al vencer le escribiría al cliente
+  // «Bryan sigue revisando…» y la contaría como escalación sin atender.
+  const cierre = conv.modo === "esperando_humano" || conv.modo === "humano" ? aBot : {};
   switch (cmd.tipo) {
-    case "bot":
-      await d.repo.actualizarConversacion(conv.id, {
-        modo: "bot",
-        modoHasta: undefined,
-        motivoModo: undefined,
-        avisoEsperaEnviado: false,
-      });
-      await d.repo.atenderAlertas(conv.id, ahora);
+    case "bot": {
+      // Si el cliente quedó sin respuesta, el asistente le contesta ya (mismo criterio que vencerModos).
+      const pendiente = ventanaAbierta(conv, ahora) && (await ultimoEsDelCliente(conv, d));
+      await d.repo.actualizarConversacion(conv.id, { ...aBot, ...(pendiente ? { responderEn: ahora } : {}) });
+      await atender(conv.id, ahora, d);
       return contestar(`Listo, el asistente vuelve a atender a ${quien}.`);
+    }
     case "pausa":
       await d.repo.actualizarConversacion(conv.id, {
         modo: "pausado",
@@ -253,15 +280,15 @@ async function procesarDueno(m: MensajeEntrante, d: Deps): Promise<void> {
       await d.repo.cancelarSeguimientos(conv.id);
       return contestar(`Listo, el asistente queda en pausa con ${quien} hasta que mandes /bot.`);
     case "ganado":
-      await d.repo.actualizarConversacion(conv.id, { estado: "ganado" });
+      await d.repo.actualizarConversacion(conv.id, { estado: "ganado", ...cierre });
       await d.repo.cancelarSeguimientos(conv.id);
-      await d.repo.atenderAlertas(conv.id, ahora);
+      await atender(conv.id, ahora, d);
       return contestar(`Anotado: venta cerrada con ${quien}.`);
     case "perdido":
-      await d.repo.actualizarConversacion(conv.id, { estado: "perdido" });
+      await d.repo.actualizarConversacion(conv.id, { estado: "perdido", ...cierre });
       if (cmd.motivo) await d.repo.actualizarLead(conv.id, { motivoPerdida: cmd.motivo });
       await d.repo.cancelarSeguimientos(conv.id);
-      await d.repo.atenderAlertas(conv.id, ahora);
+      await atender(conv.id, ahora, d);
       return contestar(`Anotado: venta perdida con ${quien}.`);
   }
 }

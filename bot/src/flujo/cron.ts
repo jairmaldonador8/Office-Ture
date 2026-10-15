@@ -4,7 +4,7 @@ import type { Contacto, Conversacion, Seguimiento } from "../datos/tipos.js";
 import { enHorario, horas, local } from "../hora.js";
 import { enmascararId, errorSeguro } from "../log.js";
 import type { Deps } from "./deps.js";
-import { procesarLote } from "./entrada.js";
+import { procesarLote, ultimoEsDelCliente, ventanaAbierta } from "./entrada.js";
 import { enviarAlCliente } from "./enviar.js";
 import { enviarADueno } from "./escalar.js";
 import { etiquetaMotivo, textoVencimiento } from "./motivos.js";
@@ -25,7 +25,7 @@ const PLANTILLAS_SEGUIMIENTO = {
     "Hola, te escribo de OfficeTure para dar seguimiento a tu cotización de mobiliario. Si todavía lo necesitas, responde este mensaje y te ayudo.",
 } as const;
 
-/** Respaldo del despachador de pg_cron: toma los turnos vencidos y los procesa. */
+/** Lo llama /api/despachar (pg_cron cada 5 s) y, como respaldo, el cron por minuto: toma los turnos vencidos y los procesa. */
 export async function despacharTurnos(d: Deps, limite = 5): Promise<number> {
   const ids = await d.repo.tomarTurnos(d.ahora(), limite);
   await Promise.allSettled(
@@ -130,7 +130,9 @@ export async function procesarSeguimientos(d: Deps): Promise<number> {
         await d.repo.cancelarSeguimientos(conv.id);
         continue;
       }
-      await d.repo.actualizarConversacion(conv.id, { toques: conv.toques + 1, ultimoBot: d.ahora() });
+      // Si el cliente contestó mientras salía el toque, su mensaje ya reinició los toques y
+      // canceló los seguimientos: no se suma ni se programa el siguiente.
+      if (!(await d.repo.sumarToque(conv.id, conv, d.ahora()))) continue;
       await programarSiguiente(conv.id, d);
     } catch (e) {
       console.error("seguimiento", s.id, errorSeguro(e));
@@ -153,11 +155,8 @@ export async function vencerModos(d: Deps): Promise<number> {
       // Otro cron traslapado ya la venció, o Bryan cambió el modo después de la consulta.
       if (!(await d.repo.tomarModoVencido(conv.id, conv.modo, ahora))) continue;
       if (esperaba) await d.repo.actualizarLead(conv.id, { escaladoSinAtender: true });
-      const ventanaAbierta =
-        conv.ultimoCliente !== undefined && ahora.getTime() - conv.ultimoCliente.getTime() < horas(24);
-      if (!ventanaAbierta) continue;
-      const mensajes = await d.repo.mensajesDelHilo(conv.id, conv.hilo);
-      if (mensajes.findLast((m) => m.autor !== "sistema")?.autor === "cliente") {
+      if (!ventanaAbierta(conv, ahora)) continue;
+      if (await ultimoEsDelCliente(conv, d)) {
         // El turno contesta lo pendiente; un aviso antes lo dejaría como contestado.
         await d.repo.actualizarConversacion(conv.id, { responderEn: ahora });
         continue;
@@ -196,13 +195,27 @@ export async function reenviarAlertas(d: Deps): Promise<number> {
       const conv = await d.repo.obtenerConversacion(a.conversacionId);
       if (conv.modo !== "esperando_humano") continue;
       const cliente = a.texto.split("\n")[1] ?? "";
-      for (const dueno of destinos)
-        await enviarADueno(
+      for (const dueno of destinos) {
+        const idExterno = await enviarADueno(
           dueno.telefono,
           `Sigue pendiente:\n${a.texto}`,
           [etiquetaMotivo(a.motivo), cliente, "Sigue pendiente de atender"],
           d,
         );
+        // Cada reenvío queda como alerta propia para que citarlo resuelva la conversación.
+        // reintentos = 1 y no diferida: no se vuelve a reenviar ni entra al resumen diario.
+        if (idExterno)
+          await d.repo.crearAlerta({
+            conversacionId: a.conversacionId,
+            motivo: a.motivo,
+            texto: a.texto,
+            enviadaA: dueno.telefono,
+            idExterno,
+            enviadaEn: d.ahora(),
+            reintentos: 1,
+            diferida: false,
+          });
+      }
     } catch (e) {
       console.error("reenviar alerta", a.id, errorSeguro(e));
     }
@@ -267,16 +280,21 @@ export async function reprocesarEventos(d: Deps): Promise<number> {
   return pendientes.length;
 }
 
-/** Lo que corre el cron cada minuto. Cada paso es independiente: si uno falla, los demás siguen. */
+/**
+ * Lo que corre el cron cada minuto. Cada paso es independiente: si uno falla, los demás siguen.
+ * Lo que avisa a Bryan y vence esperas va primero para que los toques y los eventos atrasados
+ * no lo dejen sin tiempo. Los turnos los despacha pg_cron cada 5 s; aquí solo va uno, al final,
+ * como respaldo por si pg_cron se detiene (cada turno puede tardar lo que una llamada al modelo).
+ */
 export async function ejecutarMinuto(d: Deps): Promise<Record<string, number | boolean | string>> {
   const salida: Record<string, number | boolean | string> = {};
   const pasos: [string, () => Promise<number | boolean>][] = [
-    ["eventos", () => reprocesarEventos(d)],
-    ["turnos", () => despacharTurnos(d)],
-    ["seguimientos", () => procesarSeguimientos(d)],
     ["modos", () => vencerModos(d)],
     ["alertas", () => reenviarAlertas(d)],
     ["resumen", () => resumenDiario(d)],
+    ["seguimientos", () => procesarSeguimientos(d)],
+    ["eventos", () => reprocesarEventos(d)],
+    ["turnos", () => despacharTurnos(d, 1)],
   ];
   for (const [nombre, paso] of pasos) {
     try {
