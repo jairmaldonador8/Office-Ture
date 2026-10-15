@@ -6,6 +6,7 @@
    ========================================================================== */
 
 .turi{
+  --t-x:26px;--t-y:30px;   /* separación de Turi respecto a la esquina */
   --m-oliva:#2f3a2a;--m-tinta:#1f241b;--m-sage:#8a9a72;--m-marfil:#efeae0;--m-crema:#faf8f3;
   --m-terracota:#c5532c;--m-texto:#4a4f43;--m-tenue:#8a8c80;--m-linea:rgba(47,58,42,.12);
   font-family:'Poppins','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:300;
@@ -15,7 +16,7 @@
 body.con-turi .flotante{display:none}
 
 /* ---------- lanzador: Turi sentado en su sillón ---------- */
-.turi-lanzador{position:fixed;right:10px;bottom:10px;z-index:40;width:96px;height:96px;border:0;padding:0;background:none;cursor:pointer;
+.turi-lanzador{position:fixed;right:var(--t-x);bottom:var(--t-y);z-index:40;width:96px;height:96px;border:0;padding:0;background:none;cursor:pointer;
   -webkit-tap-highlight-color:transparent}
 .turi-cuerpo{position:absolute;inset:0;animation:turi-flota 3.6s ease-in-out infinite;transform-origin:50% 90%}
 .turi-cuerpo img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
@@ -37,7 +38,7 @@ body.con-turi .flotante{display:none}
 @keyframes turi-late{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
 
 /* nube de saludo junto al lanzador */
-.turi-nube{position:fixed;right:18px;bottom:112px;z-index:40;max-width:min(260px,calc(100vw - 36px));
+.turi-nube{position:fixed;right:calc(var(--t-x) + 8px);bottom:calc(var(--t-y) + 102px);z-index:40;max-width:min(260px,calc(100vw - 36px));
   background:var(--m-crema);color:var(--m-tinta);border-radius:14px 14px 4px 14px;padding:14px 38px 14px 16px;
   font-size:14px;line-height:1.45;box-shadow:0 18px 40px -16px rgba(31,36,27,.45);cursor:pointer;
   opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .35s ease,transform .35s ease}
@@ -47,13 +48,14 @@ body.con-turi .flotante{display:none}
   color:var(--m-tenue);font-size:18px;line-height:1}
 
 /* ---------- panel ---------- */
-.turi-panel{position:fixed;z-index:41;left:8px;right:8px;bottom:84px;height:min(640px,calc(100dvh - 100px));
+.turi-panel{position:fixed;z-index:41;left:8px;right:8px;bottom:calc(var(--t-y) + 80px);height:min(640px,calc(100dvh - var(--t-y) - 96px));
   display:flex;flex-direction:column;background:var(--m-crema);border-radius:14px;overflow:hidden;
   box-shadow:0 30px 70px -20px rgba(31,36,27,.55);
   opacity:0;transform:translateY(16px) scale(.98);transform-origin:bottom right;pointer-events:none;visibility:hidden;
   transition:opacity .3s ease,transform .35s cubic-bezier(.2,.7,.2,1),visibility 0s linear .35s}
 .turi.abierta .turi-panel{opacity:1;transform:none;pointer-events:auto;visibility:visible;transition-delay:0s}
-@media (min-width:560px){.turi-panel{left:auto;right:18px;width:390px}}
+@media (min-width:560px){.turi-panel{left:auto;right:calc(var(--t-x) + 8px);width:390px}}
+@media (min-width:1000px){.turi{--t-x:56px;--t-y:48px}}
 
 .turi-cabeza{display:flex;align-items:center;gap:12px;padding:14px 14px 14px 16px;background:var(--m-oliva);color:var(--m-marfil)}
 .turi-avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(140deg,#8ff0d8,#5aa9f5);display:grid;place-items:center;flex:none;overflow:hidden}
