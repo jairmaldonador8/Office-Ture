@@ -87,8 +87,9 @@ section{position:relative}
 .barra.compacta .menu{pointer-events:none}
 .barra-cta{display:none;grid-column:3;grid-row:1;justify-self:end;padding:12px 22px;font-size:11.5px}
 .hamburguesa{grid-column:3;grid-row:1;justify-self:end;width:46px;height:46px;border-radius:50%;border:1px solid rgba(239,234,224,.5);background:transparent;display:grid;place-items:center;cursor:pointer;position:relative;z-index:60;transition:border-color .3s ease,opacity .25s ease}
+.ham-iso{display:none}
 .hamburguesa span{display:block;width:18px;height:1.5px;background:var(--marfil);position:absolute;left:13px;transition:transform .3s ease,top .3s ease,background .3s ease}
-.hamburguesa span:first-child{top:18px}.hamburguesa span:last-child{top:26px}
+.hamburguesa span:nth-of-type(1){top:18px}.hamburguesa span:nth-of-type(2){top:26px}
 .barra.solida .hamburguesa{border-color:var(--linea)}
 .barra.solida .hamburguesa span{background:var(--tinta)}
 /* con el menú abierto la barra queda encima del menú, transparente y en marfil */
@@ -98,8 +99,8 @@ body.menu-abierto .barra .logo-claro{opacity:1}
 .menu-abierto .barra-cta{visibility:hidden}
 .menu-abierto .hamburguesa{border-color:rgba(239,234,224,.4)}
 .menu-abierto .hamburguesa span{background:var(--marfil)!important;top:22px}
-.menu-abierto .hamburguesa span:first-child{transform:rotate(45deg)}
-.menu-abierto .hamburguesa span:last-child{transform:rotate(-45deg)}
+.menu-abierto .hamburguesa span:nth-of-type(1){transform:rotate(45deg)}
+.menu-abierto .hamburguesa span:nth-of-type(2){transform:rotate(-45deg)}
 @media (min-width:1000px){
   .barra{--logo-escala:1.76;--fila-alta:92px;--fila-baja:68px}
   .barra .logo{height:34px}
@@ -113,6 +114,15 @@ body.menu-abierto .barra .logo-claro{opacity:1}
   .menu-abierto .hamburguesa{opacity:1}
   .barra.compacta:not(.subiendo) .logo{opacity:0;transform:scale(.6);pointer-events:none}
   .barra.subiendo .hamburguesa{transform:none}
+  /* en escritorio el botón de menú es el isotipo (sin círculo); al abrir el menú vuelve la X */
+  .barra .hamburguesa,.barra.solida .hamburguesa,body.interna .hamburguesa{border-color:transparent}
+  .hamburguesa span{opacity:0}
+  .ham-iso{display:block;width:40px;height:40px;fill:currentColor;transition:transform .3s var(--suave),fill .3s ease}
+  .barra.solida .ham-iso,body.interna .ham-iso{fill:var(--madera)}
+  .hamburguesa:hover .ham-iso{transform:scale(1.08)}
+  body.menu-abierto .ham-iso{display:none}
+  body.menu-abierto .hamburguesa span{opacity:1}
+  body.menu-abierto .barra .hamburguesa{border-color:rgba(239,234,224,.4)}
 }
 @media (min-width:1200px){.menu{gap:44px;font-size:12px}}
 
