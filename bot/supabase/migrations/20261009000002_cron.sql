@@ -8,7 +8,13 @@ declare
   v_url text;
   v_secreto text;
 begin
-  if not exists (select 1 from conversaciones where responder_en <= now()) then
+  -- Misma selección que tomar_turnos: vencidos sin bloqueo vigente, o bloqueo caducado (huérfanos).
+  if not exists (
+    select 1 from conversaciones
+    where (responder_en <= now()
+           and (en_proceso_desde is null or en_proceso_desde < now() - interval '3 minutes'))
+       or (responder_en is null and en_proceso_desde < now() - interval '3 minutes')
+  ) then
     return;
   end if;
   select decrypted_secret into v_url from vault.decrypted_secrets where name = 'url_despachar';

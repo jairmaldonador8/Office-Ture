@@ -48,6 +48,7 @@ create table conversaciones (
   actualizado timestamptz not null default now()
 );
 create index conversaciones_responder on conversaciones (responder_en) where responder_en is not null;
+create index conversaciones_en_proceso on conversaciones (en_proceso_desde) where en_proceso_desde is not null;
 create index conversaciones_modo_hasta on conversaciones (modo_hasta) where modo_hasta is not null;
 create trigger conversaciones_actualizado before update on conversaciones for each row execute function tocar_actualizado();
 
@@ -91,6 +92,7 @@ create table alertas (
   reintentos int not null default 0,
   diferida boolean not null default false
 );
+create index alertas_conversacion on alertas (conversacion_id);
 create index alertas_externo on alertas (id_externo);
 create index alertas_pendientes on alertas (enviada_en) where atendida_en is null;
 
@@ -104,6 +106,7 @@ create table seguimientos (
   cancelado boolean not null default false,
   tomado_en timestamptz
 );
+create index seguimientos_conversacion on seguimientos (conversacion_id);
 create index seguimientos_pendientes on seguimientos (programado_para) where enviado_en is null and not cancelado;
 
 create table eventos (
@@ -135,6 +138,8 @@ create table llamadas_modelo (
   creado timestamptz not null default now()
 );
 
+create index llamadas_modelo_conversacion on llamadas_modelo (conversacion_id);
+
 create table marcas (
   clave text primary key,
   valor text not null,
@@ -153,16 +158,23 @@ alter table ventanas_duenos enable row level security;
 alter table llamadas_modelo enable row level security;
 alter table marcas enable row level security;
 
--- Toma turnos vencidos sin que dos despachadores tomen el mismo.
+-- Toma turnos sin que dos despachadores tomen el mismo. Toma:
+--  a) turnos vencidos (responder_en <= now()) sin bloqueo o con bloqueo caducado (3 min);
+--  b) turnos huérfanos: responder_en es null (lo puso esta función al tomarlos) pero el
+--     bloqueo caducó, es decir, el trabajador cayó a media conversación.
+-- Contrato del trabajador: al terminar un turno (con éxito o con fallo ya manejado) pone
+-- en_proceso_desde = null y NO toca responder_en: si llegó un mensaje durante el
+-- procesamiento, ese mensaje ya volvió a fijar responder_en y el turno siguiente se toma solo.
 create or replace function tomar_turnos(p_limite int) returns setof uuid
 language sql set search_path = public as $$
   update conversaciones c
   set en_proceso_desde = now(), responder_en = null
   where c.id in (
     select id from conversaciones
-    where responder_en <= now()
-      and (en_proceso_desde is null or en_proceso_desde < now() - interval '3 minutes')
-    order by responder_en
+    where (responder_en <= now()
+           and (en_proceso_desde is null or en_proceso_desde < now() - interval '3 minutes'))
+       or (responder_en is null and en_proceso_desde < now() - interval '3 minutes')
+    order by coalesce(responder_en, en_proceso_desde)
     limit p_limite
     for update skip locked
   )
