@@ -84,13 +84,13 @@ section{position:relative}
 .barra{position:fixed;inset:0 0 auto 0;z-index:40;color:var(--marfil);--p:0;--logo-escala:1.44;--fila-alta:76px;--fila-baja:76px;transition:background .3s ease,box-shadow .3s ease,color .3s ease}
 .barra-in{width:min(1280px,100% - 2*var(--gutter));margin-inline:auto}
 .barra-fila{position:relative;height:calc(var(--fila-alta) + (var(--fila-baja) - var(--fila-alta)) * var(--p));display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:20px;transition:height .35s var(--suave)}
-.barra .logo{display:block;height:32px;position:relative;grid-column:2;grid-row:1;justify-self:center;transform:scale(calc(1 + (var(--logo-escala) - 1) * (1 - var(--p))));transform-origin:center;transition:transform .35s var(--suave),opacity .25s ease;will-change:transform}
+.barra .logo{display:block;height:32px;position:relative;grid-column:2;grid-row:1;justify-self:center;transform:scale(calc(1 + (var(--logo-escala) - 1) * (1 - var(--p))));transform-origin:center;transition:transform .35s var(--suave),opacity .25s ease}
 .barra .logo img{height:100%;width:auto}
-.barra .logo-oscuro{position:absolute;inset:0;opacity:0;transition:opacity .3s ease}
-.barra .logo-claro{transition:opacity .3s ease}
+.barra .logo-oscuro{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .3s ease,visibility .3s ease}
+.barra .logo-claro{transition:opacity .3s ease,visibility .3s ease}
 .barra.solida{background:rgba(244,241,234,.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 1px 0 var(--linea);color:var(--tinta)}
-.barra.solida .logo-oscuro{opacity:1}
-.barra.solida .logo-claro{opacity:0}
+.barra.solida .logo-oscuro{opacity:1;visibility:visible}
+.barra.solida .logo-claro{opacity:0;visibility:hidden}
 /* fila de enlaces: se pliega (altura y opacidad) conforme sube --p */
 .menu{display:none;justify-content:center;align-items:center;gap:34px;font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;font-weight:500;height:calc(46px * (1 - var(--p)));opacity:clamp(0,1 - var(--p) * 1.8,1);overflow:hidden;transition:height .35s var(--suave),opacity .25s ease}
 .menu a{padding:6px 0;border-bottom:1px solid transparent;transition:border-color .2s ease;white-space:nowrap}
@@ -104,8 +104,8 @@ section{position:relative}
 .barra.solida .hamburguesa{border-color:var(--linea)}
 .barra.solida .hamburguesa span{background:var(--tinta)}
 /* con el menú abierto la barra queda encima del menú, transparente y en marfil */
-body.menu-abierto .barra .logo-oscuro{opacity:0}
-body.menu-abierto .barra .logo-claro{opacity:1}
+body.menu-abierto .barra .logo-oscuro{opacity:0;visibility:hidden}
+body.menu-abierto .barra .logo-claro{opacity:1;visibility:visible}
 .menu-abierto .barra-cta{visibility:hidden}
 .menu-abierto .hamburguesa{border-color:rgba(239,234,224,.4)}
 .menu-abierto .hamburguesa span{background:var(--marfil)!important;top:22px}
@@ -438,41 +438,37 @@ body.menu-abierto .barra .logo-claro{opacity:1}
 @media (prefers-reduced-motion:reduce){.plano{transition:none}.plano .pod,.plano .zona-g{transition:none}.plano .pop{animation:none}}
 
 /* ---------- marca (adelanto del branding) ---------- */
-.marca{padding:96px 0}
-.marca-rejilla{display:grid;gap:14px}
-.marca-tarjeta{position:relative;border-radius:var(--radio);overflow:hidden;margin:0;display:grid;min-height:220px}
-.marca-tarjeta small{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;font-weight:500;color:var(--sage)}
-.marca-tarjeta figcaption{padding:0;font-size:14px;color:var(--texto);line-height:1.45;display:grid;gap:6px}
-.marca-iso{background:var(--madera);aspect-ratio:1;place-items:center;padding:12%;color:var(--marfil)}
-.marca-iso img{width:min(100%,420px);height:auto;filter:none}
-.marca-iso figcaption{position:absolute;left:24px;bottom:22px;color:rgba(239,234,224,.9)}
-.marca-iso small{color:rgba(239,234,224,.65)}
-.marca-logo{background:#fff;border:1px solid var(--linea);place-items:center;padding:12% 10% 64px}
-.marca-logo img{width:min(100%,520px);height:auto}
-.marca-logo figcaption{position:absolute;left:24px;bottom:22px}
-.marca-paleta{background:#fff;border:1px solid var(--linea);padding:22px 24px 24px;gap:16px;align-content:start}
-.marca-paleta ul{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;height:150px}
-.marca-paleta li{position:relative;background:var(--c);border-radius:14px;border:1px solid rgba(31,36,27,.08)}
-.marca-paleta li span{position:absolute;left:0;right:0;bottom:-22px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:500;color:var(--tenue);text-align:center;white-space:nowrap}
-.marca-paleta ul{margin-bottom:26px}
-.marca-tipo{background:var(--oliva);color:var(--marfil);padding:22px 24px 24px;gap:8px;align-content:space-between}
-.marca-tipo small{color:var(--sage-claro)}
-.marca-tipo b{font-weight:600;font-size:clamp(96px,22vw,150px);line-height:.9;letter-spacing:-.05em;color:var(--marfil)}
-.marca-tipo span{font-size:13px;letter-spacing:.04em;color:var(--sage-claro)}
-.marca-nota{margin-top:28px;font-size:12.5px;color:var(--tenue);max-width:60ch}
+/* ---------- galería: dos filas de fotos en movimiento ----------
+   Fila de arriba: fotos verticales hacia la izquierda; fila de abajo: fotos horizontales
+   y muebles recortados sobre paneles, hacia la derecha. Se pueden deslizar con el dedo;
+   js/galeria.js las mueve solas y se detienen al tocarlas o pasar el mouse. */
+.galeria{padding:88px 0 96px;overflow:hidden}
+.galeria-cabeza{margin-bottom:34px}
+.galeria-cabeza h2{font-size:clamp(40px,7vw,96px);letter-spacing:-.05em;line-height:.95}
+.gal-filas{display:grid;gap:14px}
+.gal-fila{display:flex;gap:14px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:0 var(--gutter);cursor:grab;user-select:none}
+.gal-fila::-webkit-scrollbar{display:none}
+.gal-fila.arrastrando{cursor:grabbing}
+.gal-fila figure{position:relative;flex:none;margin:0;height:300px;overflow:hidden;border-radius:6px}
+.gal-fila.baja figure{height:210px}
+.gal-foto{aspect-ratio:3/4}
+.gal-foto.ancha{aspect-ratio:4/3}
+.gal-foto img{width:100%;height:100%;object-fit:cover;filter:var(--foto);transition:transform 1.4s var(--suave)}
+.gal-fila figure:hover img{transform:scale(1.04)}
+.gal-pieza{aspect-ratio:1/1;display:grid;place-items:center;border-radius:6px 6px 60px 6px!important}
+.gal-pieza.sage{background:radial-gradient(75% 70% at 55% 55%,#eef1e6,#dde3d0)}
+.gal-pieza.beige{background:radial-gradient(75% 70% at 55% 55%,#f6f0e6,#e9e1d2)}
+.gal-pieza img{width:86%;height:86%;object-fit:contain;transition:transform 1.4s var(--suave)}
+.gal-fila figcaption{position:absolute;left:10px;bottom:10px;background:rgba(255,255,255,.92);color:var(--tinta);border-radius:999px;padding:5px 11px;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:500}
 @media (min-width:760px){
-  .marca{padding:130px 0}
-  .marca-rejilla{grid-template-columns:5fr 7fr;grid-template-rows:auto auto;gap:20px}
-  .marca-iso{grid-row:1/3;aspect-ratio:auto;min-height:520px}
-  .marca-logo{min-height:280px}
-  .marca-rejilla>.marca-paleta,.marca-rejilla>.marca-tipo{min-height:220px}
+  .galeria{padding:130px 0 140px}
+  .gal-filas{gap:18px}
+  .gal-fila{gap:18px}
+  .gal-fila figure{height:440px}
+  .gal-fila.baja figure{height:300px}
+  .gal-fila figcaption{left:14px;bottom:14px;font-size:10px}
 }
-@media (min-width:1000px){
-  .marca-rejilla{grid-template-columns:5fr 4fr 3fr}
-  .marca-iso{grid-row:1/3}
-  .marca-logo{grid-column:2/4}
-  .marca-tarjeta figcaption{font-size:15px}
-}
+@media (prefers-reduced-motion:reduce){.gal-foto img,.gal-pieza img{transition:none}}
 
 /* ---------- 03 proyectos ---------- */
 .proyectos{padding:96px 0}
@@ -636,8 +632,8 @@ body.menu-abierto .barra .logo-claro{opacity:1}
 
 /* ---------- páginas interiores (inventario, equipa) ---------- */
 body.interna .barra{color:var(--tinta)}
-body.interna .barra .logo-oscuro{opacity:1}
-body.interna .barra .logo-claro{opacity:0}
+body.interna .barra .logo-oscuro{opacity:1;visibility:visible}
+body.interna .barra .logo-claro{opacity:0;visibility:hidden}
 body.interna .hamburguesa{border-color:var(--linea)}
 body.interna .hamburguesa span{background:var(--tinta)}
 .pagina-cabeza{padding:136px 0 36px}

@@ -459,7 +459,7 @@
   var raiz = document.createElement('div');
   raiz.className = 'turi';
   raiz.innerHTML =
-    '<div class="turi-nube" role="status"><b>Hola, soy Turi.</b> ¿Te ayudo a encontrar algo para tu oficina?<button type="button" aria-label="Cerrar aviso">×</button></div>' +
+    '<div class="turi-nube" role="status"><span class="turi-nube-texto"></span><button type="button" aria-label="Cerrar aviso">×</button></div>' +
     '<section class="turi-panel" role="dialog" aria-modal="false" aria-label="Chat con Turi, asistente de OfficeTure">' +
       '<header class="turi-cabeza">' +
         '<div class="turi-avatar"><img src="' + POSE.cara + '" alt=""></div>' +
@@ -599,7 +599,9 @@
   raiz.querySelector('.turi-x').addEventListener('click', cerrar);
   nube.addEventListener('click', function (e) {
     if (e.target.tagName === 'BUTTON') {
+      // si la persona cierra un mensaje, Turi se calla un buen rato
       nube.classList.remove('ver');
+      silencioHasta = Date.now() + 120000;
       return;
     }
     abrir();
@@ -623,12 +625,7 @@
     raiz.classList.toggle('oculto', ocultar);
     if (!ocultar && !yaSalio) {
       yaSalio = true;
-      setTimeout(function () {
-        if (raiz.classList.contains('abierta') || raiz.classList.contains('oculto')) return;
-        nube.classList.add('ver');
-        saluda();
-        if (telefono.matches) setTimeout(function () { nube.classList.remove('ver'); }, 5000);
-      }, telefono.matches ? 600 : 3500);
+      setTimeout(function () { platica(0); }, telefono.matches ? 600 : 3500);
     }
   }
   var pendiente = false;
@@ -647,6 +644,33 @@
     lanzador.classList.add('saluda');
     setTimeout(function () { lanzador.classList.remove('saluda'); }, 2600);
   }
+  // mensajes que Turi suelta cada cierto tiempo: aparecen unos segundos y se van solos
+  var MENSAJES = [
+    '<b>Hola, soy Turi.</b> ¿Cómo estás? ¿Te puedo ayudar en algo?',
+    '¿Tienes alguna duda? Pregúntame lo que quieras.',
+    '¿Buscas sillas o escritorios? Te paso precios al momento.',
+    'Te digo si entregamos en tu zona y cuándo llega.',
+    '¿Vas a equipar una oficina completa? Cuéntame cuántas personas son.',
+    'Aquí sigo, por si me necesitas.',
+    '¿Quieres ver qué tenemos de entrega inmediata?'
+  ];
+  var textoNube = nube.querySelector('.turi-nube-texto');
+  var ultimo = -1, silencioHasta = 0, quitar = null;
+  function platica(i) {
+    if (raiz.classList.contains('abierta') || raiz.classList.contains('oculto') || Date.now() < silencioHasta) return;
+    if (i === undefined) {
+      do { i = 1 + Math.floor(Math.random() * (MENSAJES.length - 1)); } while (i === ultimo);
+    }
+    ultimo = i;
+    textoNube.innerHTML = MENSAJES[i];
+    nube.classList.add('ver');
+    saluda();
+    clearTimeout(quitar);
+    quitar = setTimeout(function () { nube.classList.remove('ver'); }, 6000);
+  }
+  (function cadaRato() {
+    setTimeout(function () { platica(); cadaRato(); }, 26000 + Math.random() * 12000);
+  })();
   (function cadaTanto() {
     setTimeout(function () { saluda(); cadaTanto(); }, 11000 + Math.random() * 7000);
   })();
