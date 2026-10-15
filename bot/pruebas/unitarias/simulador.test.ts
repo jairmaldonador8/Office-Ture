@@ -82,3 +82,36 @@ describe("simulador con modelo guionado", () => {
     expect(fallas(r)).toContain("aviso_antes_de_datos");
   });
 });
+
+describe("pasos especiales", () => {
+  it("foto-espacio: el cliente manda una imagen que el asistente recibe como adjunto", async () => {
+    const modelo = modeloGuionado([
+      respuestaTexto("Gracias por la foto. ¿Cuántas personas trabajan en ese espacio?"),
+    ]);
+    const r = await correr(escenario("foto-espacio"), modelo);
+    expect(fallas(r)).toEqual([]);
+    expect(r.transcripcion).toContain("**Cliente** (foto): Este es mi espacio");
+    expect(modelo.llamadas).toBe(1);
+  });
+
+  it("bot-reactiva: tras el comando /bot el asistente vuelve a contestar", async () => {
+    const modelo = modeloGuionado([
+      respuestaTexto("Hola, la Silla LITE está en $1,490 + IVA. ¿Cuántas necesitas?"),
+      respuestaTexto("Para 3 sillas LITE serían $4,470 + IVA. ¿En qué zona las necesitas?"),
+    ]);
+    const r = await correr(escenario("bot-reactiva"), modelo);
+    expect(fallas(r)).toEqual([]);
+    expect(r.hallazgos.find((h) => h.regla === "responde_tras_bot")?.ok).toBe(true);
+    expect(r.transcripcion).toContain("**Dueño (comando):** /bot 8112345678");
+    expect(modelo.llamadas).toBe(2);
+  });
+
+  it("silla-ergo: sin preguntar cuál falla la rúbrica", async () => {
+    const modelo = modeloGuionado([
+      llamadaHerramienta("buscar_productos", { categoria: "silla", texto: "ergo" }),
+      respuestaTexto("Tenemos la Silla ERGO en $3,100 + IVA y la Silla ERGO operativa en $1,950 + IVA."),
+    ]);
+    const r = await correr(escenario("silla-ergo"), modelo);
+    expect(fallas(r)).toContain("incluye_todos");
+  });
+});

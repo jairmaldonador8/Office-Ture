@@ -22,6 +22,15 @@ import { type Hallazgo, revisarAviso, revisarTexto, revisarTurno } from "./revis
 import { depsDePrueba, mensajeWa } from "./unitarias/apoyo.js";
 
 const CLIENTE = "5218112345678";
+/** Primer dueño de DUENOS en la config de prueba: manda los comandos desde su número personal. */
+const DUENO = "5218111111111";
+/** PNG de 1x1 píxel para el paso `foto`: lo bastante válido para que Claude real lo acepte. */
+export const PNG_MINIMO = Uint8Array.from(
+  Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+    "base64",
+  ),
+);
 /** Más que el debounce de 4 s de la entrada, para que el turno ya esté vencido. */
 const PASO_COLA_MS = 5_000;
 const ENTRE_MENSAJES_MS = 60_000;
@@ -46,6 +55,7 @@ export async function correr(
 ): Promise<ResultadoEscenario> {
   const { deps, repo, wa, reloj } = depsDePrueba({ modelo });
   if (opciones.claudeModel) deps.config = { ...deps.config, CLAUDE_MODEL: opciones.claudeModel };
+  wa.descargarMedia = async () => ({ bytes: PNG_MINIMO, mime: "image/png" });
   const productos = productosDeLaHoja();
   await repo.sincronizarProductos(productos);
   if (e.inicio) reloj.fijar(aLocal(...e.inicio));
@@ -54,6 +64,9 @@ export async function correr(
   const hallazgos: Hallazgo[] = [];
   let ecos = 0;
   let enviadosAntesDeBryan: number | undefined;
+  let alClienteAlComando: number | undefined;
+  const alClienteHasta = () =>
+    wa.enviados.filter((env) => env.para === CLIENTE && env.tipo !== "escribiendo").length;
 
   for (const [i, paso] of e.mensajes.entries()) {
     const antes = wa.enviados.length;
@@ -64,6 +77,17 @@ export async function correr(
         fecha: deps.ahora().toISOString(),
         ...(i === 0 && e.referencia ? { referencia: e.referencia } : {}),
       });
+    } else if ("foto" in paso) {
+      transcripcion.push(`**Cliente** (foto): ${paso.foto || "(sin texto)"}`, "");
+      ev = mensajeWa(paso.foto, {
+        fecha: deps.ahora().toISOString(),
+        tipo: "imagen",
+        mediaId: `media.${i + 1}`,
+        mime: "image/png",
+      });
+    } else if ("dueno" in paso) {
+      transcripcion.push(`**Dueño (comando):** ${paso.dueno}`, "");
+      ev = mensajeWa(paso.dueno, { de: DUENO, nombre: "Bryan", fecha: deps.ahora().toISOString() });
     } else {
       transcripcion.push(`**Bryan (desde su app):** ${paso.bryan}`, "");
       ev = {
@@ -96,6 +120,7 @@ export async function correr(
     const alCliente = nuevos.filter((env) => env.para === CLIENTE);
     if (alCliente.length > 0)
       hallazgos.push({ ...revisarTurno(alCliente), regla: `una_burbuja#paso${i + 1}` });
+    if (typeof paso === "object" && "dueno" in paso) alClienteAlComando = alClienteHasta();
     reloj.avanzar(ENTRE_MENSAJES_MS);
   }
 
@@ -111,7 +136,11 @@ export async function correr(
   if (textosBot.length === 0 && !esp.callaTrasBryan)
     hallazgos.push({ regla: "responde", ok: false, detalle: "el asistente no mandó ningún texto" });
   for (const [i, t] of textosBot.entries())
-    for (const h of revisarTexto(t, precios)) hallazgos.push({ ...h, regla: `${h.regla}#${i + 1}` });
+    for (const h of revisarTexto(t, precios, {
+      ...(e.montosPermitidos ? { montosPermitidos: e.montosPermitidos } : {}),
+      ...(e.presupuestoCliente ? { presupuestoCliente: e.presupuestoCliente } : {}),
+    }))
+      hallazgos.push({ ...h, regla: `${h.regla}#${i + 1}` });
   if (esp.escalar)
     hallazgos.push({
       regla: "escala_con_motivo",
@@ -134,10 +163,11 @@ export async function correr(
   }
   if (esp.incluyeTodos) {
     const todos = esp.incluyeTodos;
+    const pregunta = (t: string) => !esp.preguntaCual || /cu[aá]l|\?/i.test(t);
     hallazgos.push({
       regla: "incluye_todos",
-      ok: textosBot.some((t) => todos.every((x) => t.toLowerCase().includes(x.toLowerCase()))),
-      detalle: todos.join(" y "),
+      ok: textosBot.some((t) => todos.every((x) => t.toLowerCase().includes(x.toLowerCase())) && pregunta(t)),
+      detalle: todos.join(" y ") + (esp.preguntaCual ? " y pregunta cuál" : ""),
     });
   }
   if (esp.callaTrasBryan) {
@@ -148,6 +178,14 @@ export async function correr(
       regla: "calla_tras_bryan",
       ok: enviadosAntesDeBryan !== undefined && despues.length === 0,
       detalle: `${despues.length} envíos al cliente después del eco`,
+    });
+  }
+  if (esp.respondeTrasBot) {
+    const despues = alClienteHasta() - (alClienteAlComando ?? Number.POSITIVE_INFINITY);
+    hallazgos.push({
+      regla: "responde_tras_bot",
+      ok: alClienteAlComando !== undefined && despues > 0,
+      detalle: `${alClienteAlComando === undefined ? "sin comando" : `${despues} envíos al cliente tras /bot`}`,
     });
   }
   const aviso = revisarAviso(textosBot, deps.config.AVISO_PRIVACIDAD_URL);
