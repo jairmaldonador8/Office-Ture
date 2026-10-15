@@ -8,6 +8,7 @@ import {
 import { esDueno } from "../config.js";
 import type { Conversacion, Mensaje } from "../datos/tipos.js";
 import { horas } from "../hora.js";
+import { enmascararId, errorSeguro } from "../log.js";
 import { AYUDA_COMANDOS, parsearComando } from "./comandos.js";
 import type { Deps } from "./deps.js";
 import { referenciaCliente } from "./escalar.js";
@@ -36,11 +37,11 @@ export async function procesarLote(eventos: EventoCanal[], d: Deps): Promise<voi
       await procesarEvento(ev, d);
       await d.repo.marcarEventoProcesado(id);
     } catch (e) {
-      console.error("evento", id, e);
+      console.error("evento", id, errorSeguro(e));
       // El evento queda pendiente y el cron lo reintenta; si ni esto se puede guardar, se sigue.
       await d.repo
         .marcarEventoProcesado(id, e instanceof Error ? e.message : String(e))
-        .catch((e2: unknown) => console.error("evento sin marcar", id, e2));
+        .catch((e2: unknown) => console.error("evento sin marcar", id, errorSeguro(e2)));
     }
   }
 }
@@ -126,7 +127,7 @@ async function prepararAdjunto(
       adjunto,
     };
   } catch (e) {
-    console.error("adjunto", m.idExterno, e);
+    console.error("adjunto", m.idExterno, errorSeguro(e));
     const cual = m.tipo === "imagen" ? "la imagen" : "el audio";
     return { texto: `${texto ?? ""} [no se pudo descargar ${cual}]`.trim() };
   }
@@ -151,7 +152,7 @@ async function procesarEco(e: EcoHumano, d: Deps): Promise<void> {
       ? await d.repo.conversacionPorReferencia(e.para)
       : null;
   if (!conv) {
-    console.warn("eco sin conversación", e.canal, enmascarar(e.para));
+    console.warn("eco sin conversación", e.canal, enmascararId(e.para));
     return;
   }
 
@@ -209,9 +210,6 @@ const fechaValida = (iso: string): Date | undefined => {
   const f = new Date(iso);
   return iso && Number.isFinite(f.getTime()) ? f : undefined;
 };
-
-/** Teléfono o IGSID con solo los últimos 4 caracteres visibles, para los registros. */
-const enmascarar = (id: string): string => `***${id.slice(-4)}`;
 
 async function procesarDueno(m: MensajeEntrante, d: Deps): Promise<void> {
   await d.repo.registrarVentanaDueno(m.de, d.ahora());

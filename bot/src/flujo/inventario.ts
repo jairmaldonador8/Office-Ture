@@ -1,4 +1,5 @@
 import { duenos } from "../config.js";
+import { enmascarar, errorSeguro } from "../log.js";
 import { mapearHoja } from "../negocio/hoja.js";
 import type { Deps } from "./deps.js";
 import { enviarADueno } from "./escalar.js";
@@ -19,7 +20,7 @@ async function avisarDueno(d: Deps, titulo: string, texto: string, detalle: stri
       await d.correo(`OfficeTure · ${titulo}`, texto);
       return;
     } catch (e) {
-      console.error("correo de inventario", e);
+      console.error("correo de inventario", errorSeguro(e));
     }
   }
   const [principal] = duenos(d.config);
@@ -82,11 +83,11 @@ export async function sincronizarInventario(
     resultado = { ...r, errores };
   } catch (e) {
     const mensaje = e instanceof Error ? e.message : String(e);
-    console.error("inventario", mensaje);
+    console.error("inventario", enmascarar(mensaje));
     try {
       await registrarFallo(d, mensaje, e instanceof HojaRecortada);
     } catch (e2) {
-      console.error("inventario: no pude registrar el fallo", e2);
+      console.error("inventario: no pude registrar el fallo", errorSeguro(e2));
     }
     return { fallo: mensaje };
   }

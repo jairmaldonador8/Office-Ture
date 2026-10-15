@@ -2,6 +2,7 @@ import { esFueraDeVentana } from "../canales/tipos.js";
 import { duenos } from "../config.js";
 import type { Contacto, Conversacion, Seguimiento } from "../datos/tipos.js";
 import { enHorario, horas, local } from "../hora.js";
+import { enmascararId, errorSeguro } from "../log.js";
 import type { Deps } from "./deps.js";
 import { procesarLote } from "./entrada.js";
 import { enviarAlCliente } from "./enviar.js";
@@ -33,7 +34,7 @@ export async function despacharTurnos(d: Deps, limite = 5): Promise<number> {
         // procesarTurno libera el turno al terminar, aun si falla.
         await procesarTurno(id, d);
       } catch (e) {
-        console.error("turno", id, e);
+        console.error("turno", id, errorSeguro(e));
       }
     }),
   );
@@ -70,7 +71,7 @@ async function enviarPlantilla(conv: Conversacion, contacto: Contacto, d: Deps):
       texto: PLANTILLAS_SEGUIMIENTO[nombre],
       ...(id ? { idExterno: id } : {}),
     })
-    .catch((e: unknown) => console.error("guardar plantilla", conv.id, e));
+    .catch((e: unknown) => console.error("guardar plantilla", conv.id, errorSeguro(e)));
 }
 
 /**
@@ -132,7 +133,7 @@ export async function procesarSeguimientos(d: Deps): Promise<number> {
       await d.repo.actualizarConversacion(conv.id, { toques: conv.toques + 1, ultimoBot: d.ahora() });
       await programarSiguiente(conv.id, d);
     } catch (e) {
-      console.error("seguimiento", s.id, e);
+      console.error("seguimiento", s.id, errorSeguro(e));
     }
   }
   return lista.length;
@@ -172,7 +173,7 @@ export async function vencerModos(d: Deps): Promise<number> {
       );
       await d.repo.actualizarConversacion(conv.id, { ultimoBot: d.ahora() });
     } catch (e) {
-      console.error("vencer modo", conv.id, e);
+      console.error("vencer modo", conv.id, errorSeguro(e));
     }
   }
   return vencidas.length;
@@ -203,7 +204,7 @@ export async function reenviarAlertas(d: Deps): Promise<number> {
           d,
         );
     } catch (e) {
-      console.error("reenviar alerta", a.id, e);
+      console.error("reenviar alerta", a.id, errorSeguro(e));
     }
   }
   return pendientes.length;
@@ -220,7 +221,7 @@ export async function resumenDiario(d: Deps): Promise<boolean> {
   try {
     await enviarResumen(d, ahora);
   } catch (e) {
-    console.error("resumen diario", hoy, e);
+    console.error("resumen diario", hoy, errorSeguro(e));
   }
   return true;
 }
@@ -252,7 +253,8 @@ async function enviarResumen(d: Deps, ahora: Date): Promise<void> {
     d,
   );
   // enviarADueno no lanza: si no salió, devuelve undefined y el día ya quedó tomado.
-  if (id === undefined) console.error("resumen diario: no se pudo enviar a", principal.telefono);
+  if (id === undefined)
+    console.error("resumen diario: no se pudo enviar a", enmascararId(principal.telefono));
 }
 
 /** Eventos que el webhook guardó pero no terminó de procesar (más de un minuto). */

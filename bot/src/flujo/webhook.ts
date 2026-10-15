@@ -3,6 +3,7 @@ import { firmaValida } from "../canales/firma.js";
 import { parsearInstagram } from "../canales/instagram.js";
 import { type Canal, type EventoCanal, idEvento } from "../canales/tipos.js";
 import { parsearWhatsApp } from "../canales/whatsapp.js";
+import { errorSeguro } from "../log.js";
 import type { Deps } from "./deps.js";
 import { procesarLote } from "./entrada.js";
 
@@ -62,7 +63,7 @@ export async function manejarWebhook(
   // Si la base falla aquí, el 500 hace que Meta reintente: mejor que perder el mensaje.
   for (const ev of eventos) if (await d.repo.registrarEvento(idEvento(ev), canal, ev)) nuevos.push(ev);
   if (nuevos.length > 0) {
-    diferir(procesarLote(nuevos, d).catch((e: unknown) => console.error("lote", canal, e)));
+    diferir(procesarLote(nuevos, d).catch((e: unknown) => console.error("lote", canal, errorSeguro(e))));
   }
   return new Response("ok");
 }

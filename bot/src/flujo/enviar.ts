@@ -1,5 +1,6 @@
 import { ErrorMeta } from "../canales/tipos.js";
 import type { Contacto, Conversacion } from "../datos/tipos.js";
+import { errorSeguro } from "../log.js";
 import type { Deps } from "./deps.js";
 
 export type ContenidoEnvio = { tipo: "texto"; texto: string } | { tipo: "imagen"; url: string; pie?: string };
@@ -77,11 +78,11 @@ export async function enviarAlCliente(
       // Un intento anterior pudo haber salido también: su eco necesita la fila pendiente.
       await d.repo
         .guardarMensaje({ ...nuevo, idExterno: id })
-        .catch((e: unknown) => console.error("guardar reintento", fila.id, e));
+        .catch((e: unknown) => console.error("guardar reintento", fila.id, errorSeguro(e)));
     else
       await d.repo
         .asignarIdExterno(fila.id, id)
-        .catch((e: unknown) => console.error("asignar id", fila.id, e));
+        .catch((e: unknown) => console.error("asignar id", fila.id, errorSeguro(e)));
     return id;
   }
 }

@@ -3,6 +3,7 @@ import type { Escalacion } from "../cerebro/herramientas.js";
 import { duenos, ultimos10 } from "../config.js";
 import type { Contacto, Lead } from "../datos/tipos.js";
 import { enHorario, horas, siguienteDiaHabilA } from "../hora.js";
+import { enmascararId, errorSeguro } from "../log.js";
 import type { Deps } from "./deps.js";
 import { etiquetaMotivo } from "./motivos.js";
 
@@ -78,7 +79,7 @@ export async function enviarADueno(
       return await plantilla();
     }
   } catch (e) {
-    console.error("alerta a dueño", telefono, e);
+    console.error("alerta a dueño", enmascararId(telefono), errorSeguro(e));
     return undefined;
   }
 }
@@ -138,7 +139,7 @@ export async function ejecutarEscalacion(conversacionId: string, esc: Escalacion
     try {
       await d.correo(`OfficeTure · ${etiquetaMotivo(esc.motivo)}`, texto);
     } catch (e) {
-      console.error("correo de alerta", e);
+      console.error("correo de alerta", errorSeguro(e));
     }
   }
 }

@@ -11,6 +11,7 @@ import {
 } from "../cerebro/responder.js";
 import type { Contacto, Conversacion, Mensaje } from "../datos/tipos.js";
 import { horas } from "../hora.js";
+import { errorSeguro } from "../log.js";
 import type { Deps } from "./deps.js";
 import { enviarAlCliente } from "./enviar.js";
 import { ejecutarEscalacion } from "./escalar.js";
@@ -68,7 +69,7 @@ async function imagenesRecientes(mensajes: Mensaje[], d: Deps): Promise<Map<stri
         mapa.set(m.id, { base64: Buffer.from(bytes).toString("base64"), mime: m.adjunto.mime });
     } catch (e) {
       // Sin imagen, el historial la describe con texto.
-      console.error("imagen del cliente", m.id, e);
+      console.error("imagen del cliente", m.id, errorSeguro(e));
     }
   }
   return mapa;
@@ -115,7 +116,7 @@ async function rotarHilo(
   try {
     resumen = await resumirHilo(medido, d.config.CLAUDE_MODEL, transcripcion);
   } catch (e) {
-    console.error("resumen de hilo", conv.id, e);
+    console.error("resumen de hilo", conv.id, errorSeguro(e));
     await registrar(`resumen: ${e instanceof Error ? e.message : String(e)}`);
     return { conv, mensajes };
   }
@@ -168,7 +169,7 @@ async function turno(conversacionId: string, d: Deps): Promise<void> {
         );
         await d.repo.actualizarConversacion(inicial.id, { avisoEsperaEnviado: true });
       } catch (e) {
-        console.error("aviso de espera", inicial.id, e);
+        console.error("aviso de espera", inicial.id, errorSeguro(e));
       }
     }
     return;
@@ -270,7 +271,7 @@ async function turno(conversacionId: string, d: Deps): Promise<void> {
         { intentos: INTENTOS_ENVIO, ...fecha() },
       );
     } catch (e) {
-      console.error("foto", conv.id, e);
+      console.error("foto", conv.id, errorSeguro(e));
     }
   }
   try {
@@ -282,7 +283,7 @@ async function turno(conversacionId: string, d: Deps): Promise<void> {
       { intentos: INTENTOS_ENVIO, ...fecha() },
     );
   } catch (e) {
-    console.error("respuesta", conv.id, e);
+    console.error("respuesta", conv.id, errorSeguro(e));
     await ejecutarEscalacion(
       conv.id,
       ctx.escalacion ??
@@ -338,7 +339,7 @@ async function fallaDelModelo(conv: Conversacion, contacto: Contacto, d: Deps): 
       { intentos: INTENTOS_ENVIO },
     );
   } catch (e) {
-    console.error("cortesía", conv.id, e);
+    console.error("cortesía", conv.id, errorSeguro(e));
     return;
   }
   await d.repo.actualizarConversacion(conv.id, { ultimoBot: d.ahora() });

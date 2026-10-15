@@ -1,6 +1,5 @@
+import { sheets, type sheets_v4 } from "@googleapis/sheets";
 import { JWT } from "google-auth-library";
-// Solo el módulo de Sheets: el índice de googleapis carga los ~300 servicios y alarga el arranque en frío.
-import { sheets, type sheets_v4 } from "googleapis/build/src/apis/sheets/index.js";
 
 const ALCANCE = "https://www.googleapis.com/auth/spreadsheets.readonly";
 

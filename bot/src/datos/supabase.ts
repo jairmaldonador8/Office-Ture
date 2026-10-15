@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Canal, EventoCanal } from "../canales/tipos.js";
 import { ultimos10 } from "../config.js";
+import { enmascarar } from "../log.js";
 import { type FiltroProductos, filtrarProductos, type Producto } from "../negocio/productos.js";
 import { avisarEcoBorrado, elegirPendiente, type HuellaEco } from "./eco.js";
 import {
@@ -159,7 +160,7 @@ const literalLike = (t: string): string => t.replace(/[\\%_]/g, (c) => `\\${c}`)
 const entreComillas = (t: string): string => `"${t.replace(/["\\]/g, (c) => `\\${c}`)}"`;
 
 function ok<T>(r: { data: T; error: { message: string } | null }, que: string): T {
-  if (r.error) throw new Error(`Supabase (${que}): ${r.error.message}`);
+  if (r.error) throw new Error(`Supabase (${que}): ${enmascarar(r.error.message)}`);
   return r.data;
 }
 
@@ -309,7 +310,7 @@ export class RepoSupabase implements Repo {
       .from("mensajes")
       .select("id", { count: "exact", head: true })
       .eq("id_externo", idExterno);
-    if (r.error) throw new Error(`Supabase (existeMensajeExterno): ${r.error.message}`);
+    if (r.error) throw new Error(`Supabase (existeMensajeExterno): ${enmascarar(r.error.message)}`);
     return (r.count ?? 0) > 0;
   }
   async mensajePorExterno(idExterno: string) {
@@ -342,7 +343,11 @@ export class RepoSupabase implements Repo {
         .select("id");
       if (r.error?.code === "23505") {
         // Otra fila ganó ese id entre la revisión y el update: esta queda pendiente.
-        console.warn("asignarIdExterno: el id externo ya estaba en otra fila", mensajeId, r.error.message);
+        console.warn(
+          "asignarIdExterno: el id externo ya estaba en otra fila",
+          mensajeId,
+          enmascarar(r.error.message),
+        );
         return;
       }
       if ((ok(r, "asignarIdExterno") as Fila[]).length > 0) return;
@@ -352,7 +357,7 @@ export class RepoSupabase implements Repo {
     const { id: _, id_externo: __, ...copia } = fila;
     const r = await this.db.from("mensajes").insert({ ...copia, id_externo: idExterno });
     if (r.error && r.error.code !== "23505")
-      throw new Error(`Supabase (asignarIdExterno): ${r.error.message}`);
+      throw new Error(`Supabase (asignarIdExterno): ${enmascarar(r.error.message)}`);
   }
   async botPendienteParaEco(conversacionId: string, eco: HuellaEco, desde: Date) {
     const r = await this.db
@@ -455,7 +460,7 @@ export class RepoSupabase implements Repo {
       .from("productos")
       .select("slug", { count: "exact", head: true })
       .eq("activo", true);
-    if (r.error) throw new Error(`Supabase (contarProductosActivos): ${r.error.message}`);
+    if (r.error) throw new Error(`Supabase (contarProductosActivos): ${enmascarar(r.error.message)}`);
     return r.count ?? 0;
   }
 
@@ -642,7 +647,7 @@ export class RepoSupabase implements Repo {
       latencia_ms: l.latenciaMs,
       error: l.error ?? null,
     });
-    if (r.error) console.warn(`Supabase (registrarLlamadaModelo): ${r.error.message}`);
+    if (r.error) console.warn(`Supabase (registrarLlamadaModelo): ${enmascarar(r.error.message)}`);
   }
   async leerMarca(clave: string) {
     const f = ok(await this.db.from("marcas").select("valor").eq("clave", clave).maybeSingle(), "leerMarca");
@@ -669,7 +674,7 @@ export class AlmacenSupabase implements Almacen {
     const r = await this.db.storage
       .from(this.bucket)
       .upload(ruta, bytes, { contentType: mime, upsert: true });
-    if (r.error) throw new Error(`Storage: ${r.error.message}`);
+    if (r.error) throw new Error(`Storage: ${enmascarar(r.error.message)}`);
   }
   async leer(ruta: string) {
     const r = await this.db.storage.from(this.bucket).download(ruta);

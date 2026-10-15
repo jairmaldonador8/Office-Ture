@@ -60,7 +60,7 @@ turno de respuesta  ── carga contexto ── Claude + herramientas ── en
 | Transcripción | Los audios se transcriben con `gpt-4o-mini-transcribe` (alternativa Deepgram Nova-3 `es-419`) antes de pasar a Claude. Si falla, el bot pide que lo escriba. | API de transcripción |
 | Herramientas de Claude | Funciones puras sobre Supabase descritas en sección 4. | Supabase |
 | Sincronizador de inventario | Lee la hoja con cuenta de servicio, valida, hace upsert en `productos`, marca inactivos los que desaparecen. | Google Sheets API |
-| Cron de seguimientos y alertas | Cada minuto: envía recordatorios vencidos, reenvía alertas sin atender, reactiva el bot cuando vencen `humano` o `esperando_humano`. Corre en Supabase (`pg_cron` + `pg_net` llamando a la función) porque el cron de Vercel en plan Hobby es diario; si se contrata Vercel Pro puede moverse. | Supabase, adaptadores |
+| Cron de seguimientos y alertas | Cada minuto: envía recordatorios vencidos, reenvía alertas sin atender, reactiva el bot cuando vencen `humano` o `esperando_humano`. Corre como cron de Vercel por minuto (`bot/vercel.json`), posible porque el proyecto está en Vercel Pro (el plan Hobby solo admite crons diarios; sección 12). El despacho de turnos cada 5 s sigue en Supabase (`pg_cron` + `pg_net`). Sin Vercel Pro, el cron por minuto tendría que moverse a `pg_cron`, llamando por `pg_net` a los mismos endpoints. | Supabase, adaptadores |
 | Simulador | CLI que corre escenarios guionizados contra el trabajador sin tocar Meta y guarda la transcripción para calificar tono y triggers. | Trabajador |
 
 ### Estructura de carpetas
