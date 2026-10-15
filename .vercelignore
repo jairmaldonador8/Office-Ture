@@ -1,0 +1,7 @@
+# Solo se publica el sitio: páginas, css, js, img, fonts y video.
+.worktrees/
+.claude/
+docs/
+*.md
+.env*
+node_modules/
