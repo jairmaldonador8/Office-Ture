@@ -320,6 +320,27 @@
     pintar();
   }
 
+  /* ---- proveedores: el botón despliega el registro ---- */
+  var provBtn = document.querySelector('.prov-abrir');
+  var provReg = document.getElementById('prov-registro');
+  if (provBtn && provReg) {
+    provBtn.addEventListener('click', function () {
+      var abrir = !provReg.classList.contains('abierto');
+      if (abrir) provReg.hidden = false;
+      requestAnimationFrame(function () { provReg.classList.toggle('abierto', abrir); });
+      provBtn.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+      provBtn.textContent = abrir ? 'Cerrar el registro' : 'Registrarme como proveedor';
+      if (abrir) {
+        setTimeout(function () {
+          provReg.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          var primero = provReg.querySelector('input'); if (primero) primero.focus({ preventScroll: true });
+        }, 450);
+      } else {
+        provReg.addEventListener('transitionend', function ocultar() { if (!provReg.classList.contains('abierto')) provReg.hidden = true; provReg.removeEventListener('transitionend', ocultar); });
+      }
+    });
+  }
+
   /* ---- formulario de proveedores → WhatsApp ---- */
   var form = document.getElementById('form-proveedor');
   if (form) {

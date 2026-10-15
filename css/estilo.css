@@ -390,13 +390,24 @@ body.menu-abierto .barra .logo-claro{opacity:1;visibility:visible}
 
 /* ---------- 05 proveedores ---------- */
 .proveedores{padding:96px 0}
-.prov-rejilla{display:grid;gap:48px}
-.prov-texto p:not(.ceja){font-size:16px;max-width:44ch;margin-top:20px}
-.prov-lista{margin-top:28px}
-.prov-lista li{padding:14px 0 14px 26px;border-top:1px solid var(--linea);font-size:14.5px;position:relative}
-.prov-lista li:last-child{border-bottom:1px solid var(--linea)}
-.prov-lista li::before{content:'';position:absolute;left:2px;top:24px;width:10px;height:1px;background:var(--madera)}
-.formulario{display:grid;gap:18px;padding-top:28px;border-top:1px solid var(--tinta)}
+/* la pregunta al centro; el registro se despliega abajo con el botón */
+.prov-centro{display:grid;justify-items:center;text-align:center;gap:20px;max-width:780px}
+.prov-centro .ceja{margin-bottom:0}
+.prov-centro h2{max-width:16ch}
+.prov-bajada{font-size:16px;max-width:46ch}
+.prov-tags{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:4px}
+.prov-tags li{font-size:12px;letter-spacing:.04em;padding:9px 14px;border:1px solid var(--linea);border-radius:999px;color:var(--texto);background:rgba(255,255,255,.4)}
+.prov-abrir{margin-top:14px}
+.prov-abrir::after{content:'';width:8px;height:8px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:translateY(-2px) rotate(45deg);transition:transform .3s ease}
+.prov-abrir[aria-expanded="true"]::after{transform:translateY(2px) rotate(-135deg)}
+.prov-registro{display:grid;grid-template-rows:0fr;transition:grid-template-rows .5s var(--suave)}
+.prov-registro.abierto{grid-template-rows:1fr}
+.prov-registro>.cont{overflow:hidden;min-height:0}
+.prov-caja{margin:40px auto 0;max-width:760px;background:#fbf9f4;border:1px solid var(--linea);border-radius:22px 22px 90px 22px;padding:30px 24px 40px}
+.form-cabeza{display:grid;gap:8px;margin-bottom:6px}
+.form-cabeza .ceja{margin-bottom:4px}
+.form-cabeza h3{font-size:clamp(22px,2.4vw,28px)}
+.formulario{display:grid;gap:18px}
 .formulario h3{font-size:22px}
 .formulario .ayuda{font-size:14px;color:var(--tenue);margin-top:-8px}
 .formulario label{display:grid;gap:6px}
@@ -411,7 +422,8 @@ body.menu-abierto .barra .logo-claro{opacity:1;visibility:visible}
 .formulario .btn{width:100%;margin-top:8px}
 .formulario .aviso{font-size:12px;color:var(--tenue);text-align:center}
 .formulario .aviso.error{color:var(--madera-2)}
-@media (min-width:900px){.proveedores{padding:130px 0}.prov-rejilla{grid-template-columns:1fr 1fr;gap:96px;align-items:start}.formulario .dos{grid-template-columns:1fr 1fr}.formulario .btn{width:auto;justify-self:start}.formulario .aviso{text-align:left}}
+@media (min-width:760px){.prov-caja{padding:44px 48px 56px}.formulario .dos{grid-template-columns:1fr 1fr}.formulario .btn{width:auto;justify-self:start}.formulario .aviso{text-align:left}}
+@media (min-width:900px){.proveedores{padding:130px 0}.prov-caja{margin-top:56px}}
 
 /* ---------- 06 contacto ---------- */
 .contacto{padding:96px 0 110px}

@@ -291,22 +291,23 @@
 
 <!-- ============ 05 PROVEEDORES ============ -->
 <section class="proveedores" id="proveedores">
-  <div class="cont prov-rejilla">
-    <div class="prov-texto aparece">
-      <p class="ceja">05 &middot; Proveedores</p>
-      <h2 data-anim="palabras">¿Fabricas o distribuyes insumos? <em>Hablemos.</em></h2>
-      <p>Estamos creciendo y buscamos proveedores serios para mantener inventario de entrega inmediata y surtir proyectos completos.</p>
-      <ul class="prov-lista">
-        <li>Melamina, tableros y cubiertas</li>
-        <li>Herrajes, correderas y jaladeras</li>
-        <li>Sillería operativa, ejecutiva y de visita</li>
-        <li>Estructura metálica y pintura electrostática</li>
-        <li>Fletes y logística en el área metropolitana</li>
-      </ul>
-    </div>
-    <form class="formulario aparece" id="form-proveedor" novalidate>
-      <h3>Registro de proveedor</h3>
-      <p class="ayuda">Llena el formulario y se manda directo a nuestro WhatsApp.</p>
+  <div class="cont prov-centro aparece">
+    <p class="ceja">05 &middot; Proveedores</p>
+    <h2 data-anim="palabras">¿Fabricas o distribuyes insumos? <em>Hablemos.</em></h2>
+    <p class="prov-bajada">Estamos creciendo y buscamos proveedores serios para mantener inventario de entrega inmediata y surtir proyectos completos.</p>
+    <ul class="prov-tags" aria-label="Insumos que buscamos">
+      <li>Melamina, tableros y cubiertas</li>
+      <li>Herrajes, correderas y jaladeras</li>
+      <li>Sillería operativa, ejecutiva y de visita</li>
+      <li>Estructura metálica y pintura electrostática</li>
+      <li>Fletes y logística en el área metropolitana</li>
+    </ul>
+    <button class="btn btn-madera prov-abrir" type="button" aria-expanded="false" aria-controls="prov-registro">Registrarme como proveedor</button>
+  </div>
+  <div class="prov-registro" id="prov-registro" hidden>
+    <div class="cont"><div class="prov-caja">
+    <form class="formulario" id="form-proveedor" novalidate>
+      <div class="form-cabeza"><p class="ceja">Registro de proveedor</p><h3>Cuéntanos qué manejas.</h3><p class="ayuda">Llena el formulario y se manda directo a nuestro WhatsApp. Te respondemos en horario de oficina.</p></div>
       <div class="dos">
         <label><span>Nombre</span><input id="pv-nombre" name="nombre" required placeholder="Tu nombre" autocomplete="name"></label>
         <label><span>Empresa</span><input id="pv-empresa" name="empresa" required placeholder="Nombre de la empresa" autocomplete="organization"></label>
@@ -319,6 +320,7 @@
       <button class="btn btn-madera" type="submit"><svg><use href="#i-wa"/></svg>Enviar por WhatsApp</button>
       <p class="aviso" id="pv-aviso">Solo usamos tus datos para responderte.</p>
     </form>
+    </div></div>
   </div>
 </section>
 
