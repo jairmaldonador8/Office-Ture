@@ -188,79 +188,40 @@
     sincronizar(gPods, d.pods, 'pod');
     gPlantas.innerHTML = planta(66, 566) + (d.recepcion || d.juntas ? '' : planta(934, 66));
 
-    var modoNombre = d.modo === 'abierta' ? 'Área abierta' : 'Cubículos con mamparas';
+    var modoNombre = n === 0 ? 'Agrega personas con +' : (d.modo === 'abierta' ? 'Área abierta' : 'Cubículos con mamparas');
     modoTxt.textContent = modoNombre;
     hitos.forEach(function (li) { li.classList.toggle('listo', n >= Number(li.dataset.min)); });
+    botones.forEach(function (b) { b.disabled = (Number(b.dataset.d) < 0 && n <= MIN) || (Number(b.dataset.d) > 0 && n >= MAX); });
 
     /* mensaje de WhatsApp con la oficina armada, sin precios */
-    var lineas = [];
-    lineas.push(n + ' × ' + (d.modo === 'abierta' ? 'escritorio lineal con cajonera' : 'estación en escuadra con mamparas'));
-    lineas.push(n + ' × silla operativa');
-    if (d.juntas) lineas.push('Sala de juntas');
-    if (d.recepcion) lineas.push('Mostrador de recepción');
-    if (d.direccion) lineas.push('Oficina de dirección');
-    var texto = 'Hola, quiero cotizar una oficina para ' + n + ' personas (' + modoNombre.toLowerCase() + ').\n' +
-      lineas.map(function (l) { return '- ' + l; }).join('\n');
+    var texto;
+    if (n === 0) {
+      texto = 'Hola, quiero cotizar mobiliario para mi oficina.';
+    } else {
+      var lineas = [];
+      lineas.push(n + ' × ' + (d.modo === 'abierta' ? 'escritorio lineal con cajonera' : 'estación en escuadra con mamparas'));
+      lineas.push(n + ' × silla operativa');
+      if (d.juntas) lineas.push('Sala de juntas');
+      if (d.recepcion) lineas.push('Mostrador de recepción');
+      if (d.direccion) lineas.push('Oficina de dirección');
+      texto = 'Hola, quiero cotizar una oficina para ' + n + ' personas (' + modoNombre.toLowerCase() + ').\n' +
+        lineas.map(function (l) { return '- ' + l; }).join('\n');
+    }
     cotizar.href = WA + '?text=' + encodeURIComponent(texto);
   }
 
-  var jugando = false, yaJugo = false;
-  rango.addEventListener('input', function () { jugando = false; pintar(); });
-  document.querySelectorAll('.hud-paso').forEach(function (b) {
+  /* la persona arma su oficina: deslizador o botones − / + */
+  var botones = document.querySelectorAll('.esp-paso');
+  function primerUso() { botones.forEach(function (b) { b.classList.remove('pulsa'); }); }
+  rango.addEventListener('input', function () { primerUso(); pintar(); });
+  botones.forEach(function (b) {
     b.addEventListener('click', function () {
-      jugando = false;
+      primerUso();
       rango.value = Math.max(MIN, Math.min(MAX, Number(rango.value) + Number(b.dataset.d)));
       pintar();
     });
   });
   pintar();
 
-  /* ---------- selector temporal de estilos ---------- */
-  var seccion = document.getElementById('espacio');
-  document.querySelectorAll('#estilo-sel button').forEach(function (b) {
-    b.addEventListener('click', function () {
-      seccion.dataset.estilo = b.dataset.estilo;
-      document.querySelectorAll('#estilo-sel button').forEach(function (o) { o.classList.toggle('activa', o === b); });
-      svg.style.removeProperty('--rx'); svg.style.removeProperty('--rz'); svg.style.removeProperty('--s');
-    });
-  });
 
-  /* ---------- parallax suave con el mouse (solo maqueta) ---------- */
-  if (escena && window.matchMedia('(hover: hover) and (pointer: fine)').matches && !reducido) {
-    escena.addEventListener('pointermove', function (e) {
-      if (seccion.dataset.estilo !== 'a') return;
-      var r = escena.getBoundingClientRect();
-      var px = (e.clientX - r.left) / r.width - 0.5, py = (e.clientY - r.top) / r.height - 0.5;
-      svg.style.setProperty('--rx', (40 - py * 8) + 'deg');
-      svg.style.setProperty('--rz', (-10 + px * 8) + 'deg');
-      svg.style.setProperty('--s', '1.02');
-    });
-    escena.addEventListener('pointerleave', function () {
-      svg.style.removeProperty('--rx'); svg.style.removeProperty('--rz'); svg.style.removeProperty('--s');
-    });
-  }
-
-  /* ---------- intro: se arma sola la primera vez que se ve ---------- */
-  function intro() {
-    if (yaJugo || reducido) return;
-    yaJugo = true; jugando = true;
-    var desde = 1, hasta = 12, t0 = null, dur = 2200;
-    rango.value = desde; ultimoN = -1; pintar();
-    function paso(t) {
-      if (!jugando) return;
-      if (!t0) t0 = t;
-      var k = Math.min(1, (t - t0) / dur);
-      var e = 1 - Math.pow(1 - k, 3);
-      rango.value = Math.round(desde + (hasta - desde) * e);
-      pintar();
-      if (k < 1) requestAnimationFrame(paso); else jugando = false;
-    }
-    requestAnimationFrame(paso);
-  }
-  if ('IntersectionObserver' in window) {
-    var io = new IntersectionObserver(function (es) {
-      es.forEach(function (e) { if (e.isIntersecting) { intro(); io.disconnect(); } });
-    }, { threshold: 0.35 });
-    io.observe(svg);
-  }
 })();

@@ -73,6 +73,11 @@ section{position:relative}
 .btn svg{width:17px;height:17px;fill:currentColor}
 .btn-madera{background:var(--madera);color:#fff;border-color:var(--madera)}
 .btn-madera:hover{background:var(--madera-2);border-color:var(--madera-2)}
+.btn-grande{padding:21px 36px;font-size:13.5px;letter-spacing:.16em;gap:14px}
+.btn-grande::after{content:'→';font-size:16px;transition:transform .2s ease}
+.btn-grande:hover::after{transform:translateX(4px)}
+.btn-marfil{background:var(--marfil);color:var(--tinta);border-color:var(--marfil)}
+.btn-marfil:hover{background:#fff;border-color:#fff}
 .btn-linea{background:transparent;color:var(--tinta);border-color:rgba(31,36,27,.4)}
 .btn-linea:hover{background:var(--tinta);color:var(--marfil);border-color:var(--tinta)}
 
@@ -203,6 +208,8 @@ body.menu-abierto .barra .logo-claro{opacity:1;visibility:visible}
 .lamina-folio{font-size:11px;letter-spacing:.1em;color:var(--tinta)}
 .lamina-cuerpo{display:grid;gap:44px;padding-top:28px}
 .lamina-texto{display:grid;gap:14px;justify-items:start;align-content:start;order:2}
+.lamina-texto .btn{margin-top:8px;width:100%}
+@media (min-width:560px){.lamina-texto .btn{width:auto}}
 .lamina-num{font-size:64px;line-height:.85;font-weight:200;letter-spacing:-.06em;color:var(--sage);margin-bottom:4px;font-variant-numeric:lining-nums}
 .lamina-texto .ceja{margin:0}
 .lamina-texto h2{font-size:clamp(34px,5.4vw,60px);letter-spacing:-.045em;line-height:1}
@@ -497,6 +504,83 @@ body.menu-abierto .barra .logo-claro{opacity:1;visibility:visible}
   .barra .logo,.barra-fila,.menu,.hamburguesa{transition:none}
   .producto-foto img,.historia img,.mosaico img,.tonos-lista img{transition:none}
 }
+
+/* ---------- armemos tu espacio ---------- */
+.espacio{position:relative;background:var(--tinta);color:rgba(239,234,224,.8);padding:28px 20px 32px;border-radius:var(--radio);overflow:hidden;box-shadow:0 40px 80px -50px rgba(31,36,27,.7)}
+.espacio::before{content:'';position:absolute;inset:0;background:radial-gradient(60% 55% at 38% 50%,rgba(138,154,114,.26),transparent 72%);pointer-events:none}
+.espacio-rejilla{position:relative;display:grid;gap:28px}
+
+/* maqueta */
+.plano-escena{position:relative;perspective:1500px;margin:0 auto;width:100%;touch-action:pan-y}
+.plano{display:block;width:100%;height:auto;filter:drop-shadow(0 28px 34px rgba(0,0,0,.5)) drop-shadow(0 6px 10px rgba(0,0,0,.3));font-family:var(--sans)}
+.plano-base{fill:#262d22}
+.plano-piso{fill:var(--crema)}
+.plano-muro{fill:none;stroke:var(--oliva);stroke-width:8;stroke-linejoin:round}
+.plano-puerta{fill:none;stroke:var(--madera);stroke-width:3;stroke-linecap:round}
+.plano text{font-size:11px;letter-spacing:.18em;text-transform:uppercase;font-weight:500;fill:var(--sage)}
+.plano .zona{fill:rgba(239,234,224,.92);stroke:rgba(47,58,42,.35);stroke-width:1.5;stroke-dasharray:6 5}
+.plano .escritorio{fill:var(--beige);stroke:rgba(31,36,27,.4);stroke-width:1.2}
+.plano .madera{fill:var(--madera);stroke:rgba(31,36,27,.35);stroke-width:1.2}
+.plano .monitor{fill:var(--tinta)}
+.plano .silla{fill:var(--oliva-2)}
+.plano .cabeza{fill:var(--tinta)}
+.plano .cabeza-marfil{fill:var(--marfil)}
+.plano .mampara{stroke:var(--sage);stroke-width:6;stroke-linecap:round;fill:none}
+.plano .librero{fill:var(--beige-claro);stroke:rgba(31,36,27,.35);stroke-width:1.2}
+.plano .planta{fill:var(--sage)}
+.plano .planta-maceta{fill:var(--madera-2)}
+.plano .pod,.plano .zona-g{transition:transform .6s var(--suave),opacity .4s ease;will-change:transform}
+.plano .pod.fuera,.plano .zona-g.fuera{opacity:0}
+.plano .pop{transform-box:fill-box;transform-origin:center;animation:popSvg .5s var(--suave) both}
+@keyframes popSvg{from{transform:scale(0)}to{transform:scale(1)}}
+
+/* panel derecho */
+.espacio-panel{display:grid;gap:18px;align-content:center}
+.espacio-panel .ceja{color:var(--sage-claro);margin-bottom:0}
+.espacio-panel h2{color:var(--marfil);font-size:clamp(34px,4.6vw,58px)}
+.espacio-panel h2 em{color:var(--beige)}
+.espacio-personas{display:grid;gap:2px;margin-top:10px}
+.espacio-personas>span{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;font-weight:500;color:var(--sage-claro)}
+.espacio-contador{display:flex;align-items:center;gap:14px;margin-top:6px}
+.espacio-personas output{font-weight:600;font-size:clamp(56px,9vw,80px);line-height:1;letter-spacing:-.05em;color:var(--marfil);font-variant-numeric:tabular-nums;min-width:2ch;text-align:center}
+.espacio-contador::after{content:'personas';font-size:14px;letter-spacing:.04em;font-weight:300;color:var(--sage-claro);margin-left:2px}
+.esp-paso{width:46px;height:46px;border-radius:50%;border:1px solid rgba(239,234,224,.35);background:transparent;color:var(--marfil);font-size:24px;line-height:1;cursor:pointer;display:grid;place-items:center;flex:none;transition:background .2s ease,color .2s ease,transform .2s var(--suave)}
+.esp-paso:hover{background:var(--marfil);color:var(--tinta)}
+.esp-paso:active{transform:scale(.94)}
+.esp-paso.pulsa{background:var(--madera);border-color:var(--madera);color:#fff;animation:pulsa 1.6s ease-in-out infinite}
+@keyframes pulsa{0%,100%{box-shadow:0 0 0 0 rgba(181,122,62,.55)}60%{box-shadow:0 0 0 12px rgba(181,122,62,0)}}
+@media (prefers-reduced-motion:reduce){.esp-paso.pulsa{animation:none}}
+.hud-pista{position:relative;padding-top:52px;margin-top:10px}
+.hitos{position:absolute;left:0;right:0;top:0;height:50px;margin:0 14px}
+.hitos li{position:absolute;left:var(--p);bottom:0;transform:translateX(-50%);display:grid;justify-items:center;gap:3px;color:rgba(239,234,224,.4);transition:color .3s ease}
+.hitos li i{width:30px;height:30px;border-radius:50%;border:1.5px solid rgba(239,234,224,.25);display:grid;place-items:center;background:rgba(31,36,27,.8);transition:background .3s ease,border-color .3s ease,box-shadow .3s ease,transform .3s var(--suave)}
+.hitos li i svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.hitos li span{display:none;font-size:9px;letter-spacing:.08em;text-transform:uppercase;font-weight:500;white-space:nowrap}
+.hitos li::after{content:'';width:1px;height:7px;background:rgba(239,234,224,.3)}
+.hitos li.listo{color:var(--marfil)}
+.hitos li.listo i{background:var(--madera);border-color:var(--madera);color:#fff;box-shadow:0 0 0 4px rgba(181,122,62,.22);transform:scale(1.08)}
+.hud-pista input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;background:linear-gradient(90deg,var(--madera) var(--pct,30%),rgba(239,234,224,.22) var(--pct,30%));border-radius:4px;outline:none;margin:0;cursor:pointer;display:block}
+.hud-pista input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:32px;height:32px;border-radius:50%;background:var(--madera);border:4px solid var(--tinta);box-shadow:0 0 0 1.5px var(--madera),0 10px 20px -8px rgba(0,0,0,.8)}
+.hud-pista input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--madera);border:4px solid var(--tinta);box-shadow:0 0 0 1.5px var(--madera)}
+.hud-pista input[type=range]:focus-visible{outline:2px solid var(--madera);outline-offset:8px}
+.espacio-modo{margin-top:4px}
+.hud-modo{display:inline-block;font-style:normal;font-size:11px;letter-spacing:.06em;color:#fff;background:var(--madera);padding:6px 13px;border-radius:999px;white-space:nowrap}
+.hud-btn{width:100%;margin-top:6px}
+.espacio-nota{font-size:12px;color:var(--sage-claro)}
+@media (min-width:760px){
+  .hud-pista{padding-top:80px}
+  .hitos{height:78px}
+  .hitos li span{display:block}
+  .hitos li:nth-child(even) span{order:-1}
+  .hud-btn{width:auto;justify-self:start}
+}
+@media (min-width:1000px){
+  .espacio{padding:56px 56px 60px}
+  .espacio-rejilla{grid-template-columns:7fr 5fr;gap:56px;align-items:center}
+  .plano-escena{margin:0}
+  .espacio-panel{padding-right:12px}
+}
+@media (prefers-reduced-motion:reduce){.plano{transition:none}.plano .pod,.plano .zona-g{transition:none}.plano .pop{animation:none}}
 
 /* ---------- equipa tu oficina: la maqueta sobre tarjeta blanca ---------- */
 .esp-paso:disabled{opacity:.35;cursor:default;animation:none;background:transparent;border-color:rgba(239,234,224,.35);color:var(--marfil)}
