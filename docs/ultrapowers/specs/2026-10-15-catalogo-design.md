@@ -37,3 +37,13 @@ Playwright a 390 × 844 y 1440 × 900: sin scroll horizontal, 22 imágenes carga
 ## Fuera de alcance
 
 Ficha de detalle por producto, PDF descargable, precios por silla, nombres definitivos. Pendiente con el cliente: validar textos, precios y los códigos.
+
+## Imágenes de producto con fondo blanco (15-oct-2026, tarde)
+
+Jair entregó dos zip idénticos (`OfficeTure_Todas_Imagenes_Desde_1121.zip`) con 25 imágenes: 15 recreaciones generadas por IA y 10 fotos originales retocadas a fondo blanco, más un LEEME que advierte que las generadas «pueden variar herrajes, número de cajones, estructura o tonalidades» y deben validarse contra el producto real. Pidió sustituir con ellas las fotos de producto del inventario y del catálogo, sin tocar las once sillas.
+
+- Se convirtieron 14 a `img/prod-*.webp` 1200 × 1200 con fondo transparente, con el mismo flujo que las sillas (script `convertir_prod.py` en el scratchpad de la sesión). Nombres: lineal, archivero (gris, foto retocada), escuadra-claro, semiejecutivo, ejecutivo, direccion, escuadra-silla, credenza, librero, archivero-nogal (foto retocada), estaciones, recepcion, privada, juntas.
+- Los acabados grafito y nogal del escritorio en escuadra (`prod-escuadra-{grafito,nogal}.webp`) se recolorearon a partir del render claro, solo en los píxeles de madera; no existen renders de esos tonos.
+- Las fotos reales que seguían en uso se renombraron a `img/foto-ejecutivo.webp` (portada del catálogo recortada con el isotipo) y `img/foto-semiejecutivo.webp` (tarjeta «Línea I» de la portada). Se borraron `prod-lineal`, `prod-archivero` y `tono-*` antiguos.
+- Inventario: cada producto lleva `data-contiene="1"` y la figura `show-foto blanca`, de modo que el escenario se pone blanco y la imagen se contiene, igual que las sillas. Catálogo: las figuras de producto y las fotos de capítulo llevan `recorte`.
+- Desajustes a validar con el cliente: el «escritorio lineal con cajonera» se muestra con un render sin cajonera (no hay uno con pedestal), el archivero principal es gris en vez de los tres tonos, y «Dirección en U» usa el render en caoba.
