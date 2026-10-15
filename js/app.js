@@ -41,6 +41,7 @@
     p = Math.round(p * 1000) / 1000;
     if (p !== pAnterior) {
       barra.style.setProperty('--p', p);
+      barra.classList.toggle('compacta', p >= 0.5);
       pAnterior = p;
     }
     var limite = hero ? hero.offsetHeight - 80 : 24;

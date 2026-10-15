@@ -66,41 +66,51 @@ section{position:relative}
 .btn-linea:hover{background:var(--tinta);color:var(--marfil);border-color:var(--tinta)}
 
 /* ---------- barra ---------- */
-/* La barra tiene altura fija; lo único que se mueve es el sello: arranca grande y se
-   encoge de forma continua al bajar. --p lo escribe app.js (0 = arriba, 1 = compacta).
-   El margen lateral del logo reserva el ancho del sello grande para que los menús,
-   que van pegados a él, no se muevan. */
-.barra{position:fixed;inset:0 0 auto 0;z-index:40;color:var(--marfil);--p:0;--logo-escala:1.44;transition:background .3s ease,box-shadow .3s ease,color .3s ease}
-.barra-in{width:min(1280px,100% - 2*var(--gutter));margin-inline:auto;height:76px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:20px}
-.barra .logo{display:block;height:32px;position:relative;grid-column:2;justify-self:center;margin-inline:calc((var(--logo-escala) - 1) * 68px);transform:scale(calc(1 + (var(--logo-escala) - 1) * (1 - var(--p))));transform-origin:center;transition:transform .35s var(--suave);will-change:transform}
+/* Como hay.com: una fila de enlaces centrada encima del sello y el sello grande debajo.
+   Al bajar, --p (0 arriba, 1 compacta; lo escribe app.js) pliega la fila de enlaces,
+   encoge el sello y deja una barra compacta con el botón de menú y Cotizar.
+   En móvil la fila de enlaces no existe: solo se encoge el sello. */
+.barra{position:fixed;inset:0 0 auto 0;z-index:40;color:var(--marfil);--p:0;--logo-escala:1.44;--fila-alta:76px;--fila-baja:76px;transition:background .3s ease,box-shadow .3s ease,color .3s ease}
+.barra-in{width:min(1280px,100% - 2*var(--gutter));margin-inline:auto}
+.barra-fila{height:calc(var(--fila-alta) + (var(--fila-baja) - var(--fila-alta)) * var(--p));display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:20px;transition:height .35s var(--suave)}
+.barra .logo{display:block;height:32px;position:relative;grid-column:2;justify-self:center;transform:scale(calc(1 + (var(--logo-escala) - 1) * (1 - var(--p))));transform-origin:center;transition:transform .35s var(--suave);will-change:transform}
 .barra .logo img{height:100%;width:auto}
 .barra .logo-oscuro{position:absolute;inset:0;opacity:0;transition:opacity .3s ease}
 .barra .logo-claro{transition:opacity .3s ease}
 .barra.solida{background:rgba(239,234,224,.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 1px 0 var(--linea);color:var(--tinta)}
 .barra.solida .logo-oscuro{opacity:1}
 .barra.solida .logo-claro{opacity:0}
-.menu{display:none;gap:28px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:500}
-.menu a{padding:6px 0;border-bottom:1px solid transparent;transition:border-color .2s ease}
+/* fila de enlaces: se pliega (altura y opacidad) conforme sube --p */
+.menu{display:none;justify-content:center;align-items:center;gap:34px;font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;font-weight:500;height:calc(46px * (1 - var(--p)));opacity:clamp(0,1 - var(--p) * 1.8,1);overflow:hidden;transition:height .35s var(--suave),opacity .25s ease}
+.menu a{padding:6px 0;border-bottom:1px solid transparent;transition:border-color .2s ease;white-space:nowrap}
 .menu a:hover{border-color:currentColor}
-.menu-izq{grid-column:1;justify-self:end}
-.menu-der{grid-column:3;justify-self:stretch;display:flex;align-items:center;gap:28px}
-.barra-cta{display:none;padding:12px 22px;font-size:11.5px;margin-left:auto}
-.hamburguesa{grid-column:3;justify-self:end;width:46px;height:46px;border-radius:50%;border:1px solid rgba(239,234,224,.5);background:transparent;display:grid;place-items:center;cursor:pointer;position:relative;z-index:60;transition:border-color .3s ease}
+.barra.compacta .menu{pointer-events:none}
+.barra-cta{display:none;grid-column:3;justify-self:end;padding:12px 22px;font-size:11.5px}
+.hamburguesa{grid-column:3;justify-self:end;width:46px;height:46px;border-radius:50%;border:1px solid rgba(239,234,224,.5);background:transparent;display:grid;place-items:center;cursor:pointer;position:relative;z-index:60;transition:border-color .3s ease,opacity .25s ease}
 .hamburguesa span{display:block;width:18px;height:1.5px;background:var(--marfil);position:absolute;left:13px;transition:transform .3s ease,top .3s ease,background .3s ease}
 .hamburguesa span:first-child{top:18px}.hamburguesa span:last-child{top:26px}
 .barra.solida .hamburguesa{border-color:var(--linea)}
 .barra.solida .hamburguesa span{background:var(--tinta)}
+/* con el menú abierto la barra queda encima del menú, transparente y en marfil */
+body.menu-abierto .barra,body.menu-abierto .barra.solida,html[data-tema="azul"] body.menu-abierto .barra.solida{z-index:55;background:transparent;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;color:var(--marfil)}
+body.menu-abierto .barra .logo-oscuro{opacity:0}
+body.menu-abierto .barra .logo-claro{opacity:1}
+.menu-abierto .barra-cta{visibility:hidden}
 .menu-abierto .hamburguesa{border-color:rgba(239,234,224,.4)}
 .menu-abierto .hamburguesa span{background:var(--marfil)!important;top:22px}
 .menu-abierto .hamburguesa span:first-child{transform:rotate(45deg)}
 .menu-abierto .hamburguesa span:last-child{transform:rotate(-45deg)}
-@media (max-width:999px){.menu-der{display:none}}
-@media (min-width:1000px){.menu{display:flex}.barra-cta{display:inline-flex}.hamburguesa{display:none}}
-/* Cuánto crece el sello según el ancho: los menús, pegados al sello, marcan el límite. */
-@media (min-width:1000px){.barra{--logo-escala:1.2}.barra .logo{height:34px}.menu{gap:18px;font-size:11.5px}.menu-der{gap:18px}.barra-cta{padding:12px 18px}}
-@media (min-width:1200px){.barra{--logo-escala:1.5}.menu{gap:22px}.menu-der{gap:22px}}
-@media (min-width:1300px){.barra{--logo-escala:1.76}.menu{gap:26px;font-size:12px}.menu-der{gap:26px}.barra-cta{padding:12px 22px}}
-@media (min-width:1400px){.barra{--logo-escala:1.76}.menu{gap:28px}.menu-der{gap:28px}}
+@media (min-width:1000px){
+  .barra{--logo-escala:1.76;--fila-alta:92px;--fila-baja:68px}
+  .barra .logo{height:34px}
+  .menu{display:flex}
+  .barra-cta{display:inline-flex}
+  /* el botón de menú solo aparece cuando la fila de enlaces ya se plegó */
+  .hamburguesa{grid-column:1;justify-self:start;opacity:clamp(0,var(--p) * 2 - 1,1);visibility:hidden}
+  .barra.compacta .hamburguesa,.menu-abierto .hamburguesa{visibility:visible}
+  .menu-abierto .hamburguesa{opacity:1}
+}
+@media (min-width:1200px){.menu{gap:44px;font-size:12px}}
 
 /* ---------- menú móvil ---------- */
 .menu-movil{position:fixed;inset:0;z-index:50;background:var(--oliva);color:var(--marfil);display:flex;flex-direction:column;justify-content:center;padding:96px var(--gutter) 40px;opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity .35s ease,transform .35s ease,visibility 0s .35s}
@@ -113,7 +123,7 @@ section{position:relative}
 .menu-movil nav small{font-weight:500;font-size:11px;letter-spacing:.2em;color:var(--sage-claro);width:28px;flex:none}
 .menu-pie{margin-top:36px;display:flex;flex-direction:column;gap:18px;font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--sage-claro);font-weight:500}
 .menu-pie .btn{width:100%}
-@media (min-width:1000px){.menu-movil{display:none}}
+@media (min-width:1000px){.menu-movil nav,.menu-pie{width:100%;max-width:760px;margin-inline:auto}.menu-pie{flex-direction:row;align-items:center;justify-content:space-between}.menu-pie .btn{width:auto}.menu-sillon{right:8%;width:34vw}}
 
 /* ---------- portada ---------- */
 .hero{position:relative;min-height:100vh;min-height:100svh;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--marfil);background:var(--tinta);overflow:hidden;isolation:isolate;padding:120px 0 96px}
@@ -498,7 +508,7 @@ section{position:relative}
   .hero-foto img{animation:none;transform:none}
   .revela{animation:none;opacity:1;transform:none}
   .aparece{opacity:1;transform:none;transition:none}
-  .barra .logo{transition:none}
+  .barra .logo,.barra-fila,.menu,.hamburguesa{transition:none}
   .producto-foto img,.historia img,.mosaico img,.tonos-lista img{transition:none}
 }
 

@@ -16,7 +16,8 @@
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="preload" href="fonts/Poppins-600.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/Poppins-300.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="img/hero.webp" as="image" type="image/webp">
+<link rel="preload" href="img/proy-despues.webp" as="image" type="image/webp">
+<script>try{var t=localStorage.getItem("ot-tema");if(t==="azul")document.documentElement.setAttribute("data-tema","azul")}catch(e){}</script>
 <link rel="stylesheet" href="css/estilo.css">
 <script type="application/ld+json">
 {
@@ -52,22 +53,32 @@
 
 <a class="saltar" href="#inicio">Ir al contenido</a>
 
+<!-- selector de propuesta de color: herramienta de revisión, se quita al aprobar -->
+<div class="tema-sel" id="tema-sel" role="group" aria-label="Propuesta de color">
+  <span>Propuesta</span>
+  <button type="button" data-tema="oliva" class="activa"><i style="--c:#8a9a72"></i>Oliva</button>
+  <button type="button" data-tema="azul"><i style="--c:#a0ccc7"></i>Azul</button>
+</div>
+
 <!-- ============ BARRA ============ -->
 <header class="barra" id="barra">
   <div class="barra-in">
-    <a class="logo" href="#inicio" aria-label="OfficeTure, inicio">
-      <img src="img/logo-sello-negro.png" alt="OfficeTure" width="900" height="224">
-    </a>
     <nav class="menu" aria-label="Secciones">
       <a href="#nosotros">Nosotros</a>
-      <a href="#catalogo">Catálogo</a>
+      <a href="inventario.html">Catálogo</a>
       <a href="#proyectos">Proyectos</a>
       <a href="#proceso">Proceso</a>
       <a href="#proveedores">Proveedores</a>
       <a href="#contacto">Contacto</a>
     </nav>
-    <a class="btn btn-madera barra-cta" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20mobiliario%20para%20mi%20oficina" target="_blank" rel="noopener">Cotizar</a>
-    <button class="hamburguesa" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="menu-movil"><span></span><span></span></button>
+    <div class="barra-fila">
+      <button class="hamburguesa" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="menu-movil"><span></span><span></span></button>
+      <a class="logo" href="#inicio" aria-label="OfficeTure, inicio">
+        <img class="logo-claro" src="img/logo-sello-marfil.png" alt="OfficeTure" width="900" height="224">
+        <img class="logo-oscuro" src="img/logo-sello-negro.png" alt="" width="900" height="224">
+      </a>
+      <a class="btn btn-madera barra-cta" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20mobiliario%20para%20mi%20oficina" target="_blank" rel="noopener">Cotizar</a>
+    </div>
   </div>
 </header>
 
@@ -75,7 +86,7 @@
   <img class="menu-sillon" src="img/sillon-sage.png" alt="" width="900" height="962">
   <nav aria-label="Secciones">
     <a href="#nosotros"><small>01</small>Nosotros</a>
-    <a href="#catalogo"><small>02</small>Catálogo</a>
+    <a href="inventario.html"><small>02</small>Catálogo</a>
     <a href="#proyectos"><small>03</small>Proyectos</a>
     <a href="#proceso"><small>04</small>Proceso</a>
     <a href="#proveedores"><small>05</small>Proveedores</a>
@@ -91,49 +102,61 @@
 
 <!-- ============ PORTADA ============ -->
 <section class="hero" id="inicio">
-  <img class="hero-marca" src="img/sillon-sage.png" alt="" aria-hidden="true" width="900" height="962">
-  <div class="cont hero-rejilla">
-    <div class="hero-texto">
-      <p class="ceja revela" style="--d:.05s">Mobiliario de oficina &middot; San Nicolás de los Garza, N.&nbsp;L.</p>
-      <h1 class="revela" style="--d:.15s">Espacios que te <em>acompañan.</em></h1>
-      <p class="hero-bajada revela" style="--d:.3s">Diseñamos y fabricamos mobiliario para oficinas que se viven todos los días. Entrega inmediata en 1&nbsp;a&nbsp;2 días, o el equipamiento completo de tu empresa, instalado.</p>
-      <div class="hero-acciones revela" style="--d:.42s">
-        <a class="btn btn-madera" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20mobiliario%20para%20mi%20oficina" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>Cotización en 30 minutos</a>
-        <a class="btn btn-linea" href="#catalogo">Ver catálogo</a>
-      </div>
-      <ul class="hero-pilares revela" style="--d:.55s" aria-label="Pilares de la marca">
-        <li>Humano</li><li>Elegante</li><li>Funcional</li>
-      </ul>
+  <div class="hero-fondo" aria-hidden="true">
+    <!-- Video de portada: coloca el archivo en video/portada.mp4 (ver video/LEEME.txt).
+         Mientras no exista, se muestran las fotos de abajo con movimiento lento. -->
+    <video class="hero-video" id="hero-video" autoplay muted loop playsinline preload="auto" poster="img/proy-despues.webp">
+      <source src="video/portada.mp4" type="video/mp4">
+    </video>
+    <div class="hero-slides">
+      <img src="img/proy-despues.webp" alt="" width="1600" height="900" fetchpriority="high">
+      <img src="img/hero.webp" alt="" width="1400" height="1866" loading="lazy">
+      <img src="img/proy-recepcion.webp" alt="" width="1200" height="900" loading="lazy">
+      <img src="img/nosotros-1.webp" alt="" width="1200" height="1600" loading="lazy">
     </div>
-    <div class="hero-visual revela" style="--d:.25s">
-      <figure class="hero-foto">
-        <img src="img/hero.webp" alt="Sala de juntas equipada por OfficeTure con mesa en tono grafito y sillas ejecutivas" width="1400" height="1866" fetchpriority="high">
-      </figure>
-      <div class="hero-tarjetas">
-        <a class="hero-tarjeta" href="#catalogo">
-          <small>Línea I</small>
-          <b>Entrega inmediata</b>
-          <span>Escritorios, archiveros y sillas en inventario. En tu oficina en 1&nbsp;a&nbsp;2 días.</span>
-          <svg><use href="#i-flecha"/></svg>
-        </a>
-        <a class="hero-tarjeta oscura" href="#catalogo">
-          <small>Línea II</small>
-          <b>Equipamiento de oficinas</b>
-          <span>Estaciones, salas de juntas y recepción, a la medida de tu empresa.</span>
-          <svg><use href="#i-flecha"/></svg>
-        </a>
-      </div>
+    <div class="hero-velo"></div>
+  </div>
+  <div class="cont hero-centro">
+    <p class="ceja revela" style="--d:.1s">Mobiliario de oficina &middot; Monterrey</p>
+    <h1 class="revela" style="--d:.2s">Espacios que te <em>acompañan.</em></h1>
+    <p class="hero-bajada revela" style="--d:.35s">Diseñamos, fabricamos e instalamos el mobiliario de tu oficina. Inventario de entrega inmediata o proyectos completos para tu empresa.</p>
+    <div class="hero-acciones revela" style="--d:.5s">
+      <a class="btn btn-madera" href="inventario.html">Ver inventario</a>
+      <a class="btn btn-blanca" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20mobiliario%20para%20mi%20oficina" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>Cotización en 30 minutos</a>
     </div>
   </div>
+  <a class="hero-scroll revela" style="--d:.9s" href="#lineas" aria-label="Bajar"><span></span></a>
 </section>
 
-<!-- ============ CINTA ============ -->
-<div class="cinta" aria-hidden="true">
-  <div class="cinta-pista">
-    <span>Natural</span><img src="img/sillon-marfil.png" alt="" width="900" height="962"><span>Elegante</span><img src="img/sillon-marfil.png" alt="" width="900" height="962"><span>Atemporal</span><img src="img/sillon-marfil.png" alt="" width="900" height="962"><span>Funcional</span><img src="img/sillon-marfil.png" alt="" width="900" height="962"><span>Humano</span><img src="img/sillon-marfil.png" alt="" width="900" height="962">
-    <span>Natural</span><img src="img/sillon-marfil.png" alt="" width="900" height="962"><span>Elegante</span><img src="img/sillon-marfil.png" alt="" width="900" height="962"><span>Atemporal</span><img src="img/sillon-marfil.png" alt="" width="900" height="962"><span>Funcional</span><img src="img/sillon-marfil.png" alt="" width="900" height="962"><span>Humano</span><img src="img/sillon-marfil.png" alt="" width="900" height="962">
+<!-- ============ DOS LÍNEAS ============ -->
+<section class="lineas-grandes" id="lineas">
+  <div class="cont lineas-rejilla">
+    <a class="linea-grande aparece" href="inventario.html">
+      <figure class="linea-grande-foto">
+        <img src="img/prod-semiejecutivo.webp" alt="Escritorio semiejecutivo en L con librero, de entrega inmediata" width="1200" height="1600" loading="lazy">
+        <span class="linea-grande-cta"><b>Ver inventario<svg><use href="#i-flecha"/></svg></b><small>Entrega en 1 a 2 días</small></span>
+      </figure>
+      <div class="linea-grande-texto">
+        <p class="ceja">Línea I &middot; Entrega inmediata</p>
+        <h2>Lo que tenemos <em>hoy.</em></h2>
+        <p>Escritorios, sillas y archiveros en inventario, listos para entregarse en 1&nbsp;a&nbsp;2 días en Monterrey y su área metropolitana. Sin tiempos de fabricación.</p>
+        <span class="enlace">Ver inventario</span>
+      </div>
+    </a>
+    <a class="linea-grande aparece" href="equipa.html">
+      <figure class="linea-grande-foto">
+        <img src="img/proy-despues.webp" alt="Oficina corporativa equipada con estaciones de trabajo y mamparas" width="1600" height="900" loading="lazy">
+        <span class="linea-grande-cta"><b>Arma tu oficina<svg><use href="#i-flecha"/></svg></b><small>Maqueta interactiva</small></span>
+      </figure>
+      <div class="linea-grande-texto">
+        <p class="ceja">Línea II &middot; Equipamiento de oficinas</p>
+        <h2>Tu empresa, <em>completa.</em></h2>
+        <p>Estaciones de trabajo, salas de juntas, recepción y dirección fabricados a la medida de tu espacio, entregados e instalados por nuestro equipo.</p>
+        <span class="enlace">Arma tu oficina</span>
+      </div>
+    </a>
   </div>
-</div>
+</section>
 
 <!-- ============ 01 NOSOTROS ============ -->
 <section class="nosotros" id="nosotros">
@@ -142,7 +165,7 @@
       <p class="ceja aparece">01 &middot; Nosotros</p>
       <h2 class="aparece">Diseño para una vida <em>real.</em></h2>
       <p class="grande aparece">Creemos en espacios que se viven, que inspiran y que evolucionan contigo. Pensamos cada mueble en las personas que lo van a usar.</p>
-      <p class="aparece">OfficeTure by Bryan López es una empresa 100&nbsp;% mexicana que diseña y fabrica mobiliario de oficina en San Nicolás de los Garza. Trabajamos con empresas, corporativos y despachos de Monterrey y su área metropolitana: nos cuentas qué espacio tienes y cuántas personas lo usan; nosotros proponemos, fabricamos, entregamos e instalamos.</p>
+      <p class="aparece">Somos una empresa 100&nbsp;% mexicana. Diseñamos y fabricamos mobiliario de oficina en San Nicolás de los Garza para empresas y despachos de Monterrey. Tú nos cuentas tu espacio; nosotros lo proponemos, fabricamos e instalamos.</p>
       <ol class="pilares aparece">
         <li><span class="n">01</span><b>Humano</b><p>Muebles que se adaptan a tu ritmo y a la forma en que trabajas, no al revés.</p></li>
         <li><span class="n">02</span><b>Elegante</b><p>Líneas limpias, tonos que combinan entre sí y acabados que se ven bien con los años.</p></li>
@@ -161,162 +184,6 @@
       <div><b>30<small>min</small></b><span>para recibir tu cotización por WhatsApp</span></div>
       <div><b>+20</b><span>oficinas equipadas en Nuevo León</span></div>
       <div><b>100<small>%</small></b><span>diseño y fabricación mexicana</span></div>
-    </div>
-  </div>
-</section>
-
-<!-- ============ 02 CATÁLOGO ============ -->
-<section class="catalogo" id="catalogo">
-  <div class="cont">
-    <div class="seccion-cabeza aparece">
-      <p class="ceja">02 &middot; Catálogo</p>
-      <h2>Dos formas de equipar tu <em>oficina.</em></h2>
-      <a class="enlace" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20el%20cat%C3%A1logo%20completo%20de%20OfficeTure" target="_blank" rel="noopener">Pedir el catálogo completo</a>
-    </div>
-    <div class="cat-tabs aparece" role="tablist" aria-label="Líneas de negocio">
-      <button type="button" role="tab" id="tab-inmediata" aria-selected="true" aria-controls="panel-inmediata" class="activa"><small>I</small>Entrega inmediata<span>1 a 2 días</span></button>
-      <button type="button" role="tab" id="tab-equipamiento" aria-selected="false" aria-controls="panel-equipamiento"><small>II</small>Equipamiento de oficinas<span>proyectos completos</span></button>
-    </div>
-  </div>
-
-  <!-- ---- Panel I: showroom ---- -->
-  <div class="cat-panel" id="panel-inmediata" role="tabpanel" aria-labelledby="tab-inmediata">
-    <div class="cont show aparece">
-      <div class="show-stage" aria-hidden="true">
-        <img data-stage="sillas" class="contiene activa" src="img/prod-silla-1.webp" alt="" width="1000" height="1000">
-        <img data-stage="lineal" src="img/prod-lineal.webp" alt="" width="1200" height="921" loading="lazy">
-        <img data-stage="archivero" src="img/prod-archivero.webp" alt="" width="1200" height="841" loading="lazy">
-        <img data-stage="escuadra" src="img/tono-grafito.webp" alt="" width="1000" height="820" loading="lazy">
-        <img data-stage="semiejecutivo" src="img/prod-semiejecutivo.webp" alt="" width="1200" height="1600" loading="lazy">
-        <img data-stage="ejecutivo" src="img/prod-ejecutivo.webp" alt="" width="1200" height="1600" loading="lazy">
-        <div class="stage-pie"><b id="stage-num">01</b><span id="stage-nombre">Sillas operativas y ejecutivas</span></div>
-        <div class="stage-sello"><img src="img/sillon-marfil.png" alt="" width="900" height="962"></div>
-      </div>
-
-      <div class="show-lista" id="show-lista">
-        <article class="show-item activa" data-key="sillas" data-img="img/prod-silla-1.webp" data-contiene="1">
-          <figure class="show-foto blanca"><img src="img/prod-silla-1.webp" alt="Silla ejecutiva de malla con cabecera y brazos" width="1000" height="1000" loading="lazy"></figure>
-          <small class="show-num">01 &middot; Sillas</small>
-          <h3>Sillas operativas y ejecutivas</h3>
-          <p class="show-desc">Malla transpirable, brazos ajustables y base reforzada. Para jornadas largas y juntas cortas.</p>
-          <div class="variantes" role="group" aria-label="Modelos de silla">
-            <button type="button" class="var-foto activa" data-img="img/prod-silla-1.webp" data-nombre="Ejecutiva con cabecera" aria-label="Ejecutiva con cabecera"><img src="img/prod-silla-1.webp" alt="" width="1000" height="1000" loading="lazy"></button>
-            <button type="button" class="var-foto" data-img="img/prod-silla-2.webp" data-nombre="Ejecutiva respaldo alto" aria-label="Ejecutiva de respaldo alto"><img src="img/prod-silla-2.webp" alt="" width="1000" height="1000" loading="lazy"></button>
-            <button type="button" class="var-foto" data-img="img/prod-silla-3.webp" data-nombre="Operativa" aria-label="Operativa"><img src="img/prod-silla-3.webp" alt="" width="1000" height="1000" loading="lazy"></button>
-            <span class="var-nombre">Ejecutiva con cabecera</span>
-          </div>
-          <div class="show-pie">
-            <p class="precio">desde $1,490 <span>+ IVA</span></p>
-            <a class="btn btn-madera btn-chico" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20sillas%20de%20oficina" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>Cotizar</a>
-          </div>
-        </article>
-
-        <article class="show-item" data-key="lineal" data-img="img/prod-lineal.webp">
-          <figure class="show-foto"><img src="img/prod-lineal.webp" alt="Escritorio lineal en tono grafito con cajonera de tres gavetas" width="1200" height="921" loading="lazy"></figure>
-          <small class="show-num">02 &middot; Escritorios</small>
-          <h3>Escritorio lineal con cajonera</h3>
-          <p class="show-desc">El básico que nunca falla: cubierta de melamina, cajonera de tres gavetas con llave y pasacables.</p>
-          <div class="show-pie">
-            <p class="precio">$2,750 <span>+ IVA</span></p>
-            <a class="btn btn-madera btn-chico" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20un%20escritorio%20lineal" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>Cotizar</a>
-          </div>
-        </article>
-
-        <article class="show-item" data-key="archivero" data-img="img/prod-archivero.webp">
-          <figure class="show-foto"><img src="img/prod-archivero.webp" alt="Archiveros verticales de cuatro gavetas en tonos grafito, nogal y claro" width="1200" height="841" loading="lazy"></figure>
-          <small class="show-num">03 &middot; Almacenaje</small>
-          <h3>Archivero vertical de 4 gavetas</h3>
-          <p class="show-desc">Para carpetas tamaño oficio, con llave y correderas de extensión completa. En grafito, nogal o claro.</p>
-          <div class="show-pie">
-            <p class="precio">$5,200 <span>+ IVA</span></p>
-            <a class="btn btn-madera btn-chico" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20un%20archivero%20vertical" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>Cotizar</a>
-          </div>
-        </article>
-
-        <article class="show-item" data-key="escuadra" data-img="img/tono-grafito.webp">
-          <figure class="show-foto"><img src="img/tono-grafito.webp" alt="Escritorio en escuadra en tono grafito" width="1000" height="820" loading="lazy"></figure>
-          <small class="show-num">04 &middot; Escritorios</small>
-          <h3>Escritorio en escuadra</h3>
-          <p class="show-desc">Cubierta en L con cajonera lateral. Elige el acabado y mira cómo cambia.</p>
-          <div class="variantes" role="group" aria-label="Acabados">
-            <button type="button" class="var-tono activa" data-img="img/tono-grafito.webp" data-nombre="Grafito" style="--c:#4a4a4a" aria-label="Grafito"></button>
-            <button type="button" class="var-tono" data-img="img/tono-nogal.webp" data-nombre="Nogal" style="--c:#7a5137" aria-label="Nogal"></button>
-            <button type="button" class="var-tono" data-img="img/tono-claro.webp" data-nombre="Claro" style="--c:#d9c7a7" aria-label="Claro"></button>
-            <span class="var-nombre">Grafito</span>
-          </div>
-          <div class="show-pie">
-            <p class="precio">Precio a cotizar <span>según medida</span></p>
-            <a class="btn btn-madera btn-chico" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20un%20escritorio%20en%20escuadra" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>Cotizar</a>
-          </div>
-        </article>
-
-        <article class="show-item" data-key="semiejecutivo" data-img="img/prod-semiejecutivo.webp">
-          <figure class="show-foto"><img src="img/prod-semiejecutivo.webp" alt="Escritorio semiejecutivo en L con librero en tono claro y silla ejecutiva" width="1200" height="1600" loading="lazy"></figure>
-          <small class="show-num">05 &middot; Escritorios</small>
-          <h3>Semiejecutivo en L con librero</h3>
-          <p class="show-desc">Escritorio en L con librero superior y cajonera integrada. Para gerencias y despachos.</p>
-          <div class="show-pie">
-            <p class="precio">$11,500 <span>+ IVA</span></p>
-            <a class="btn btn-madera btn-chico" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20un%20escritorio%20semiejecutivo%20en%20L" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>Cotizar</a>
-          </div>
-        </article>
-
-        <article class="show-item" data-key="ejecutivo" data-img="img/prod-ejecutivo.webp">
-          <figure class="show-foto"><img src="img/prod-ejecutivo.webp" alt="Escritorio ejecutivo en nogal con librero y silla ejecutiva" width="1200" height="1600" loading="lazy"></figure>
-          <small class="show-num">06 &middot; Escritorios</small>
-          <h3>Ejecutivo con librero</h3>
-          <p class="show-desc">Cubierta amplia, credenza con librero y puertas. La pieza para la oficina de dirección.</p>
-          <div class="show-pie">
-            <p class="precio">$14,200 <span>+ IVA</span></p>
-            <a class="btn btn-madera btn-chico" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20un%20escritorio%20ejecutivo%20con%20librero" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>Cotizar</a>
-          </div>
-        </article>
-      </div>
-    </div>
-    <div class="cont show-controles" aria-hidden="true">
-      <button type="button" class="show-flecha" data-dir="-1" aria-label="Anterior"><svg><use href="#i-flecha"/></svg></button>
-      <span class="show-contador"><b id="show-actual">01</b> / 06</span>
-      <button type="button" class="show-flecha" data-dir="1" aria-label="Siguiente"><svg><use href="#i-flecha"/></svg></button>
-    </div>
-    <p class="cont nota">Precios de referencia en pesos mexicanos, más IVA. Pregunta por tonos disponibles y cantidades para empresa.</p>
-  </div>
-
-  <!-- ---- Panel II: equipa tu oficina ---- -->
-  <div class="cat-panel" id="panel-equipamiento" role="tabpanel" aria-labelledby="tab-equipamiento" hidden>
-    <div class="cont equipa">
-      <div class="equipa-tablero">
-        <div class="equipa-cabeza">
-          <p class="ceja">Equipa tu oficina</p>
-          <h3>Arma tu oficina <em>área por área.</em></h3>
-          <p>Activa las áreas que necesitas, elige el modelo y la cantidad. El resumen se arma solo y lo mandas por WhatsApp para recibir tu propuesta.</p>
-        </div>
-        <div class="equipa-areas" id="equipa-areas"></div>
-        <noscript><p class="nota">Activa JavaScript para usar el armador, o escríbenos por WhatsApp al 81 2428 3124.</p></noscript>
-      </div>
-
-      <form class="equipa-resumen" id="form-equipa" novalidate>
-        <img class="equipa-sillon" src="img/sillon-marfil.png" alt="" aria-hidden="true" width="900" height="962">
-        <p class="ceja">Tu oficina</p>
-        <label class="equipa-personas">
-          <span>¿Para cuántas personas?</span>
-          <output id="eq-num" for="eq-rango">12</output>
-          <input type="range" id="eq-rango" min="2" max="60" step="1" value="12">
-          <small><i>2</i><i>60</i></small>
-        </label>
-        <ul class="equipa-lineas" id="eq-lineas" aria-live="polite"></ul>
-        <div class="equipa-total">
-          <span>Estimado de referencia</span>
-          <b id="eq-total">desde $0</b>
-          <small>más IVA · las partidas «a cotizar» no se incluyen</small>
-        </div>
-        <fieldset class="equipa-entrega">
-          <legend>Entrega</legend>
-          <label><input type="radio" name="entrega" value="instalado a domicilio" checked><span>Instalado a domicilio</span></label>
-          <label><input type="radio" name="entrega" value="desarmado en bodega"><span>Desarmado en bodega</span></label>
-        </fieldset>
-        <button class="btn btn-madera" type="submit"><svg><use href="#i-wa"/></svg>Pedir propuesta</button>
-        <small class="equipa-nota">Te respondemos en 30 minutos con una distribución sugerida y precio cerrado.</small>
-      </form>
     </div>
   </div>
 </section>
@@ -369,52 +236,6 @@
     <div class="proceso-cta aparece">
       <p>¿Tienes un espacio en mente? Mándanos las medidas y te proponemos una distribución.</p>
       <a class="btn btn-madera" href="https://wa.me/5218124283124?text=Hola%2C%20quiero%20cotizar%20mobiliario%20para%20mi%20oficina" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>Cotización en 30 minutos</a>
-    </div>
-  </div>
-</section>
-
-<!-- ============ ARMEMOS TU ESPACIO ============ -->
-<section class="espacio" id="espacio" data-estilo="a">
-  <div class="cont espacio-rejilla">
-    <div class="plano-escena aparece" id="plano-escena">
-      <svg class="plano" id="plano" viewBox="0 0 1000 640" role="img" aria-labelledby="plano-titulo">
-        <title id="plano-titulo">Maqueta de tu oficina según el número de personas</title>
-        <defs>
-          <pattern id="plano-duela" width="120" height="26" patternUnits="userSpaceOnUse"><path class="duela" d="M0 13H120M60 0V13M0 13V26M120 13V26" fill="none" stroke="rgba(31,36,27,.08)" stroke-width="1"/></pattern>
-          <pattern id="plano-puntos" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="12" cy="12" r="1" fill="rgba(239,234,224,.22)"/></pattern>
-          <filter id="plano-sombra" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="3" flood-color="#1f241b" flood-opacity=".32"/></filter>
-          <filter id="plano-sombra-suave" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="3" stdDeviation="2" flood-color="#1f241b" flood-opacity=".22"/></filter>
-        </defs>
-        <rect class="plano-base" x="30" y="44" width="940" height="580" rx="20"/>
-        <rect class="plano-piso" x="30" y="30" width="940" height="580" rx="20"/>
-        <rect class="plano-textura" x="30" y="30" width="940" height="580" rx="20" fill="url(#plano-duela)"/>
-        <rect class="plano-muro" x="30" y="30" width="940" height="580" rx="20"/>
-        <path class="plano-puerta" d="M470 612a40 40 0 0 1 40-40" />
-        <g id="plano-zonas" filter="url(#plano-sombra-suave)"></g>
-        <g id="plano-pods" filter="url(#plano-sombra)"></g>
-        <g id="plano-plantas" filter="url(#plano-sombra-suave)"></g>
-      </svg>
-    </div>
-
-    <div class="espacio-panel aparece">
-      <p class="ceja">Armemos tu espacio</p>
-      <h2>Arma tu <em>oficina.</em></h2>
-      <label class="espacio-personas">
-        <span>¿Para cuántas personas?</span>
-        <output id="esp-num" for="esp-rango">12</output>
-        <div class="hud-pista">
-          <ul class="hitos" id="esp-hitos" aria-label="Se desbloquea al llegar a">
-            <li data-min="6" title="Sala de juntas desde 6 personas"><i><svg viewBox="0 0 24 24"><rect x="7" y="8" width="10" height="8" rx="2"/><circle cx="4" cy="12" r="1.3"/><circle cx="20" cy="12" r="1.3"/><circle cx="12" cy="4.5" r="1.3"/><circle cx="12" cy="19.5" r="1.3"/></svg></i><span>Juntas</span></li>
-            <li data-min="10" title="Recepción desde 10 personas"><i><svg viewBox="0 0 24 24"><path d="M3 15h18v4H3z"/><path d="M12 15V9"/><path d="M8 9h8"/><circle cx="12" cy="6" r="1.4"/></svg></i><span>Recepción</span></li>
-            <li data-min="13" title="Cubículos con mamparas desde 13 personas"><i><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/><rect x="5" y="5" width="5" height="5" rx="1"/><rect x="14" y="14" width="5" height="5" rx="1"/></svg></i><span>Cubículos</span></li>
-            <li data-min="16" title="Oficina de dirección desde 16 personas"><i><svg viewBox="0 0 24 24"><path d="M4 14h12v5H4z"/><path d="M11 6h5v8h-5z"/><circle cx="7" cy="9" r="1.8"/></svg></i><span>Dirección</span></li>
-          </ul>
-          <input type="range" id="esp-rango" min="1" max="28" step="1" value="12" aria-label="Número de personas">
-        </div>
-      </label>
-      <p class="espacio-modo"><em class="hud-modo" id="plano-modo">Área abierta</em></p>
-      <a class="btn btn-madera hud-btn" id="esp-cotizar" href="https://wa.me/5218124283124" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>Cotizar esta oficina</a>
-      <small class="espacio-nota">Te mandamos la propuesta por WhatsApp en 30 minutos.</small>
     </div>
   </div>
 </section>
@@ -504,11 +325,11 @@
 
 <footer class="pie">
   <div class="cont">
-    <img class="pie-wordmark" src="img/wordmark-marfil.png" alt="OfficeTure" width="1800" height="320" loading="lazy">
+    <img class="pie-wordmark" src="img/wordmark-negro.png" alt="OfficeTure" width="1800" height="320" loading="lazy">
     <div class="pie-fila">
       <span class="pie-frase">Espacios que te acompañan.</span>
       <nav class="pie-menu" aria-label="Secciones">
-        <a href="#nosotros">Nosotros</a><a href="#catalogo">Catálogo</a><a href="#proyectos">Proyectos</a><a href="#proveedores">Proveedores</a><a href="#contacto">Contacto</a>
+        <a href="#nosotros">Nosotros</a><a href="inventario.html">Catálogo</a><a href="#proyectos">Proyectos</a><a href="#proveedores">Proveedores</a><a href="#contacto">Contacto</a>
       </nav>
       <span class="pie-legal">&copy;&nbsp;2026 OfficeTure by Bryan López &middot; Mobiliario de oficina &middot; San Nicolás de los Garza, Nuevo León</span>
       <span class="pie-nota">Propuesta de sitio web preparada por Top Digital &middot; octubre de 2026. Textos, fotos y precios se afinan con el cliente antes de publicar.</span>
