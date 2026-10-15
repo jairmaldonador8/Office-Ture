@@ -16,3 +16,10 @@ Para regenerar a partir de un video nuevo (ffmpeg):
 
 Recomendaciones para el material: horizontal, 10 a 30 s, bucle limpio, sin texto quemado,
 lo importante en el tercio central (en telefono se recorta a lo alto).
+
+NOTA (15-oct-2026): el .mov del cliente trae su logotipo «OfficeTure» quemado en la esquina superior
+izquierda durante todo el clip (x 92-509, y 56-153 en 1920x1080). portada.mp4 se regenero con el filtro
+delogo de ffmpeg para quitarlo; queda una mancha difusa en esa zona, bajo el degradado de la portada:
+  ffmpeg -i portada-anterior.mp4 -an -vf "delogo=x=92:y=56:w=417:h=97" -c:v libx264 -profile:v high -preset slow -crf 19 -r 60 -pix_fmt yuv420p -movflags +faststart video/portada.mp4
+portada-movil.mp4 no lo necesita: su recorte central (608 px de ancho) deja fuera la zona del logotipo.
+Lo ideal es pedir al cliente el clip sin el logotipo y regenerar los dos archivos.
