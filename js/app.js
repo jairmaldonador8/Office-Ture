@@ -26,7 +26,7 @@
   });
   pintarTema();
 
-  /* ---- barra: el sello se encoge con el scroll (--p de 0 a 1) y la barra
+  /* ---- barra: solo el sello se encoge con el scroll (--p de 0 a 1); la barra
      se vuelve sólida al pasar la portada (o casi de inmediato en interiores) ---- */
   var hero = document.getElementById('inicio');
   var TRAMO = 260;           /* píxeles de scroll en los que el logo pasa de grande a chico */
@@ -41,7 +41,6 @@
     p = Math.round(p * 1000) / 1000;
     if (p !== pAnterior) {
       barra.style.setProperty('--p', p);
-      barra.classList.toggle('compacta', p >= 1);
       pAnterior = p;
     }
     var limite = hero ? hero.offsetHeight - 80 : 24;
