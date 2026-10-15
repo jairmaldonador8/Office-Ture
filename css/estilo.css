@@ -332,20 +332,61 @@ body.menu-abierto .barra .logo-claro{opacity:1;visibility:visible}
 }
 
 /* ---------- redes ---------- */
+/* ---------- redes: «No te pierdas de nada» ----------
+   Panel beige con esquina orgánica: botones grandes por red y un teléfono con un perfil
+   de Instagram dibujado (sin fotos: publicaciones en colores de la marca). */
 .redes{padding:96px 0;overflow:hidden}
-.redes-rejilla{display:grid;gap:52px;align-items:center}
-.redes-texto p:not(.ceja){font-size:16px;max-width:46ch;margin-top:20px}
-.redes-lista{margin-top:36px;border-top:1px solid var(--linea)}
-.redes-lista a{display:grid;grid-template-columns:104px 1fr auto;align-items:center;gap:16px;padding:18px 0;border-bottom:1px solid var(--linea);transition:padding .2s ease}
-.redes-lista a:hover{padding-left:10px}
-.redes-lista b{font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--tinta)}
-.redes-lista span{font-size:14px;color:var(--texto)}
-.redes-lista svg{width:18px;height:18px;color:var(--tinta)}
-.redes-fotos{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:start}
-.redes-fotos li{aspect-ratio:3/4;overflow:hidden;border-radius:var(--radio);background:var(--beige-claro)}
-.redes-fotos li:nth-child(2){margin-top:28px}
-.redes-fotos img{width:100%;height:100%;object-fit:cover;filter:var(--foto)}
-@media (min-width:900px){.redes{padding:130px 0}.redes-rejilla{grid-template-columns:1fr 1fr;gap:80px}.redes-fotos{gap:18px}.redes-fotos li:nth-child(2){margin-top:44px}}
+.redes-panel{position:relative;display:grid;gap:48px;background:radial-gradient(circle at 100% 0,rgba(255,255,255,.5) 0 18%,transparent 18.2%),#e9e1d2;border-radius:22px 22px 140px 22px;padding:44px 22px 56px;overflow:hidden}
+.redes-texto{display:grid;gap:16px;align-content:start}
+.redes-texto .ceja{margin:0}
+.redes-texto h2{font-size:clamp(44px,7.4vw,104px);letter-spacing:-.055em;line-height:.92;max-width:9ch}
+.redes-texto>p:not(.ceja){font-size:16px;max-width:40ch}
+.redes-botones{display:grid;gap:10px;margin-top:12px}
+.redes-botones a{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:14px;padding:14px 16px 14px 14px;border-radius:16px;background:#fff;color:var(--tinta);box-shadow:0 14px 30px -24px rgba(31,36,27,.5);transition:transform .35s var(--suave),box-shadow .35s var(--suave)}
+.redes-botones a:hover{transform:translateY(-3px);box-shadow:0 22px 40px -24px rgba(31,36,27,.55)}
+.redes-botones svg{width:44px;height:44px;padding:10px;border-radius:12px;color:#fff}
+.red-ig svg{background:radial-gradient(circle at 30% 110%,#f3b24a 0 25%,#e1306c 55%,#833ab4 95%)}
+.red-fb svg{background:#1877f2}
+.red-wa svg{background:#25d366;fill:#fff}
+.redes-botones span{display:grid;line-height:1.25;min-width:0}
+.redes-botones b{font-weight:500;font-size:16px}
+.redes-botones small{font-size:12.5px;color:var(--texto);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.redes-botones i{font-style:normal;font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:500;background:var(--tinta);color:var(--marfil);border-radius:999px;padding:8px 14px}
+
+/* teléfono con perfil */
+.redes-telefono{display:grid;place-items:center}
+.tel{width:min(100%,320px);background:#fff;border-radius:38px;padding:16px 14px 18px;border:8px solid var(--tinta);box-shadow:0 40px 70px -36px rgba(31,36,27,.55);transform:rotate(3deg);display:grid;gap:12px;color:var(--tinta)}
+.tel-barra{display:flex;justify-content:center;font-size:13px;font-weight:500;padding-bottom:4px}
+.tel-perfil{display:flex;align-items:center;gap:12px}
+.tel-avatar{flex:none;width:58px;height:58px;border-radius:50%;padding:3px;background:radial-gradient(circle at 30% 110%,#f3b24a 0 25%,#e1306c 55%,#833ab4 95%)}
+.tel-avatar svg{display:block;width:100%;height:100%;border-radius:50%;background:#fff;padding:9px;fill:var(--madera)}
+.tel-perfil b{display:block;font-weight:500;font-size:14px}
+.tel-perfil small{font-size:11px;color:var(--tenue)}
+.tel-bio{font-size:11.5px;line-height:1.45;color:var(--texto)}
+.tel-seguir{display:block;text-align:center;background:#0095f6;color:#fff;border-radius:8px;padding:7px;font-size:12px;font-weight:500}
+.tel-destacadas{display:flex;gap:10px;justify-content:space-between}
+.tel-destacadas span{display:grid;justify-items:center;gap:4px;font-size:9.5px;color:var(--texto)}
+.tel-destacadas span::before{content:"";width:42px;height:42px;border-radius:50%;border:2px solid #e9e1d2;background:var(--sage-claro)}
+.tel-destacadas span:nth-child(2)::before{background:var(--beige)}
+.tel-destacadas span:nth-child(3)::before{background:var(--madera)}
+.tel-destacadas span:nth-child(4)::before{background:var(--oliva)}
+.tel-rejilla{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin:2px -6px -4px}
+.tel-rejilla span{aspect-ratio:1;display:grid;place-content:center;text-align:center;padding:6px;font-size:11px;font-weight:500;line-height:1.1;letter-spacing:-.01em}
+.tel-rejilla small{display:block;font-size:8px;letter-spacing:.14em;text-transform:uppercase;font-weight:500;opacity:.75;margin-bottom:3px}
+.tel-rejilla b{display:block;font-size:22px;font-weight:500;letter-spacing:-.04em;line-height:1}
+.tel-rejilla .p1{background:var(--oliva);color:var(--marfil)}
+.tel-rejilla .p2{background:var(--madera)}
+.tel-rejilla .p2 svg{width:46px;height:46px;fill:var(--marfil)}
+.tel-rejilla .p3{background:var(--beige);color:var(--tinta)}
+.tel-rejilla .p4{background:#efeae0;color:var(--tinta)}
+.tel-rejilla .p5{background:var(--sage);color:#fff}
+.tel-rejilla .p6{background:var(--tinta);color:var(--beige)}
+@media (min-width:900px){
+  .redes{padding:130px 0}
+  .redes-panel{grid-template-columns:1.1fr 1fr;gap:56px;align-items:center;padding:72px 72px 80px}
+  .redes-botones{max-width:460px}
+  .tel{width:340px}
+}
 
 /* ---------- 05 proveedores ---------- */
 .proveedores{padding:96px 0}
@@ -393,9 +434,9 @@ body.menu-abierto .barra .logo-claro{opacity:1;visibility:visible}
 @media (min-width:900px){.contacto{padding:130px 0 150px}.contacto-rejilla{grid-template-columns:7fr 5fr;gap:96px;align-items:start}.tarjeta-wa{padding:52px 48px;position:sticky;top:100px}.datos{grid-template-columns:1fr 1fr;column-gap:40px}.mapa{aspect-ratio:16/9}}
 
 /* ---------- pie ---------- */
-.pie{color:var(--texto);padding:64px 0 32px;overflow:hidden;border-top:1px solid var(--linea)}
+.pie{color:var(--texto);padding:40px 0 32px;overflow:hidden;border-top:1px solid var(--linea)}
 .pie-wordmark{width:100%;margin:0 0 44px}
-.pie-fila{display:grid;gap:14px;font-size:11.5px;letter-spacing:.08em;border-top:1px solid var(--linea);padding-top:24px}
+.pie-fila{display:grid;gap:14px;font-size:11.5px;letter-spacing:.08em}
 .pie-frase{font-size:17px;letter-spacing:-.01em;color:var(--tinta);font-style:italic;font-weight:300}
 .pie-menu{display:flex;flex-wrap:wrap;gap:8px 22px;text-transform:uppercase;letter-spacing:.14em;font-weight:500;font-size:11px;color:var(--tinta)}
 .pie-menu a:hover{color:var(--madera)}
