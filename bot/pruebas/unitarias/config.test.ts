@@ -1,18 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { cargarConfig, duenos, esDueno } from "../../src/config.js";
-
-const envBase = {
-  META_APP_SECRET: "secreto",
-  META_VERIFY_TOKEN: "verifica",
-  WA_PHONE_NUMBER_ID: "123",
-  WA_TOKEN: "tok",
-  SUPABASE_URL: "https://x.supabase.co",
-  SUPABASE_SECRET_KEY: "sb_secret_x",
-  ANTHROPIC_API_KEY: "sk-ant",
-  DUENOS: "Bryan:5218111111111,Socio:5218122222222",
-  AVISO_PRIVACIDAD_URL: "https://officeture.mx/privacidad",
-  CRON_SECRET: "0123456789abcdef",
-};
+import { envBase } from "./apoyo.js";
 
 describe("config", () => {
   it("aplica valores por defecto", () => {
