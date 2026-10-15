@@ -575,7 +575,7 @@
   function bienvenida() {
     escribiendo({
       bienvenida: true,
-      html: 'Hola, <b>Bryan</b> y <b>Scarleth</b>. Soy Turi, el asistente de OfficeTure.\nLes ayudo con precios, entregas y dudas de nuestros muebles de oficina. ¿Qué les gustaría ver?',
+      html: saludoHora() + ', soy Turi, asistente de OfficeTure.\nTe ayudo con precios, entregas y dudas de nuestros muebles de oficina. ¿Qué estás buscando?',
       chips: ['Ver sillas', 'Ver escritorios', 'Equipar una oficina', 'Hablar con Bryan']
     });
   }
@@ -646,7 +646,7 @@
   }
   // mensajes que Turi suelta cada cierto tiempo: aparecen unos segundos y se van solos
   var MENSAJES = [
-    'Hola, <b>Bryan</b> y <b>Scarleth</b>. ¿Cómo están? ¿Les puedo ayudar en algo?',
+    '<b>Hola, soy Turi.</b> ¿Cómo estás? ¿Te puedo ayudar en algo?',
     '¿Tienes alguna duda? Pregúntame lo que quieras.',
     '¿Buscas sillas o escritorios? Te paso precios al momento.',
     'Te digo si entregamos en tu zona y cuándo llega.',
