@@ -21,22 +21,15 @@ interface WaMensaje {
   context?: { id?: string };
 }
 
-interface WaEco {
-  from: string;
-  to: string;
-  id: string;
-  timestamp: string;
-  type: string;
-  text?: { body: string };
-}
+const iso = (ts: unknown): string => {
+  const n = typeof ts === "string" || typeof ts === "number" ? Number(ts) : Number.NaN;
+  const d = new Date(n * 1000);
+  return Number.isFinite(d.getTime()) ? d.toISOString() : new Date().toISOString();
+};
 
-interface WaValor {
-  contacts?: { wa_id: string; profile?: { name?: string } }[];
-  messages?: WaMensaje[];
-  message_echoes?: WaEco[];
-}
-
-const iso = (ts: string): string => new Date(Number(ts) * 1000).toISOString();
+const objetos = (x: unknown): Record<string, unknown>[] =>
+  Array.isArray(x) ? x.filter((i): i is Record<string, unknown> => typeof i === "object" && i !== null) : [];
+const cadena = (x: unknown): boolean => typeof x === "string" && x !== "";
 
 function referencia(r: WaMensaje["referral"]): ReferenciaAnuncio | undefined {
   if (!r) return undefined;
@@ -96,24 +89,38 @@ function mensaje(m: WaMensaje, nombre: string | undefined): MensajeEntrante {
 }
 
 export function parsearWhatsApp(payload: unknown): EventoCanal[] {
-  const p = payload as {
-    object?: string;
-    entry?: { changes?: { field: string; value: WaValor }[] }[];
-  } | null;
-  if (p?.object !== "whatsapp_business_account") return [];
+  const p = payload as { object?: string; entry?: unknown } | null;
+  if (typeof p !== "object" || p === null || p.object !== "whatsapp_business_account") return [];
   const eventos: EventoCanal[] = [];
-  for (const entrada of p.entry ?? []) {
-    for (const cambio of entrada.changes ?? []) {
-      const v = cambio.value ?? {};
+  for (const entrada of objetos(p.entry)) {
+    for (const cambio of objetos(entrada.changes)) {
+      const v = (typeof cambio.value === "object" && cambio.value !== null ? cambio.value : {}) as Record<
+        string,
+        unknown
+      >;
       if (cambio.field === "messages") {
-        const nombres = new Map((v.contacts ?? []).map((c) => [c.wa_id, c.profile?.name]));
-        for (const m of v.messages ?? [])
-          eventos.push({ clase: "mensaje", m: mensaje(m, nombres.get(m.from)) });
+        const nombres = new Map<string, string>();
+        for (const c of objetos(v.contacts)) {
+          const n = (c.profile as { name?: string } | null | undefined)?.name;
+          if (cadena(c.wa_id) && cadena(n)) nombres.set(c.wa_id as string, n as string);
+        }
+        for (const m of objetos(v.messages)) {
+          if (!cadena(m.from) || !cadena(m.id)) continue;
+          const msg = m as unknown as WaMensaje;
+          eventos.push({ clase: "mensaje", m: mensaje(msg, nombres.get(msg.from)) });
+        }
       }
       if (cambio.field === "smb_message_echoes") {
-        for (const e of v.message_echoes ?? []) {
-          const eco = { canal: "whatsapp" as const, idExterno: e.id, para: e.to, fecha: iso(e.timestamp) };
-          eventos.push({ clase: "eco", e: e.text?.body ? { ...eco, texto: e.text.body } : eco });
+        for (const e of objetos(v.message_echoes)) {
+          if (!cadena(e.to) || !cadena(e.id)) continue;
+          const eco = {
+            canal: "whatsapp" as const,
+            idExterno: e.id as string,
+            para: e.to as string,
+            fecha: iso(e.timestamp),
+          };
+          const cuerpo = (e.text as { body?: string } | undefined)?.body;
+          eventos.push({ clase: "eco", e: cuerpo ? { ...eco, texto: cuerpo } : eco });
         }
       }
     }

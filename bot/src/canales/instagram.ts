@@ -25,6 +25,18 @@ interface IgEvento {
   referral?: IgReferral;
 }
 
+const fechaIso = (ts: unknown): string => {
+  const d = new Date(typeof ts === "number" ? ts : Number.NaN);
+  return Number.isFinite(d.getTime()) ? d.toISOString() : new Date().toISOString();
+};
+
+const objetos = (x: unknown): Record<string, unknown>[] =>
+  Array.isArray(x) ? x.filter((i): i is Record<string, unknown> => typeof i === "object" && i !== null) : [];
+const idDe = (x: unknown): string | undefined => {
+  const id = (x as { id?: unknown } | null | undefined)?.id;
+  return typeof id === "string" && id !== "" ? id : undefined;
+};
+
 function referencia(r: IgReferral | undefined): ReferenciaAnuncio | undefined {
   if (!r) return undefined;
   const ref: ReferenciaAnuncio = {};
@@ -39,7 +51,7 @@ function mensaje(ev: IgEvento, m: IgMensaje): MensajeEntrante {
     idExterno: m.mid,
     de: ev.sender.id,
     tipo: "otro",
-    fecha: new Date(ev.timestamp).toISOString(),
+    fecha: fechaIso(ev.timestamp),
   };
   const ref = referencia(m.referral ?? ev.referral);
   if (ref) base.referencia = ref;
@@ -56,24 +68,35 @@ function mensaje(ev: IgEvento, m: IgMensaje): MensajeEntrante {
 }
 
 export function parsearInstagram(payload: unknown, igUserId: string): EventoCanal[] {
-  const p = payload as { object?: string; entry?: { messaging?: IgEvento[] }[] } | null;
-  if (p?.object !== "instagram") return [];
+  const p = payload as { object?: string; entry?: unknown } | null;
+  if (typeof p !== "object" || p === null || p.object !== "instagram") return [];
   const eventos: EventoCanal[] = [];
-  for (const entrada of p.entry ?? []) {
-    for (const ev of entrada.messaging ?? []) {
-      const m = ev.message;
+  for (const entrada of objetos(p.entry)) {
+    for (const raw of objetos(entrada.messaging)) {
+      const m = (typeof raw.message === "object" ? raw.message : null) as IgMensaje | null;
       if (!m || m.is_deleted) continue;
+      const emisor = idDe(raw.sender);
+      const receptor = idDe(raw.recipient);
+      if (typeof m.mid !== "string" || m.mid === "") continue;
       if (m.is_echo) {
+        if (!receptor) continue;
         const eco = {
           canal: "instagram" as const,
           idExterno: m.mid,
-          para: ev.recipient.id,
-          fecha: new Date(ev.timestamp).toISOString(),
+          para: receptor,
+          fecha: fechaIso(raw.timestamp),
         };
         eventos.push({ clase: "eco", e: m.text ? { ...eco, texto: m.text } : eco });
         continue;
       }
-      if (ev.sender.id === igUserId) continue;
+      if (!emisor || emisor === igUserId) continue;
+      const ev: IgEvento = {
+        sender: { id: emisor },
+        recipient: { id: receptor ?? "" },
+        timestamp: raw.timestamp as number,
+        message: m,
+      };
+      if (raw.referral) ev.referral = raw.referral as IgReferral;
       eventos.push({ clase: "mensaje", m: mensaje(ev, m) });
     }
   }

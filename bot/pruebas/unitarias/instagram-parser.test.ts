@@ -133,4 +133,50 @@ describe("parsearInstagram", () => {
     ).toEqual([]);
     expect(parsearInstagram({ object: "page" }, NEGOCIO)).toEqual([]);
   });
+
+  it("no lanza con payloads malformados y conserva los mensajes válidos", () => {
+    const payload = {
+      object: "instagram",
+      entry: [
+        null,
+        { messaging: "x" },
+        {
+          messaging: [
+            null,
+            {
+              sender: { id: "A" },
+              recipient: { id: NEGOCIO },
+              timestamp: 1791561600000,
+              message: { text: "sin mid" },
+            },
+            {
+              sender: { id: "A" },
+              recipient: { id: NEGOCIO },
+              timestamp: 1791561600000,
+              message: { mid: "mid.ok", text: "hola" },
+            },
+            { recipient: { id: NEGOCIO }, message: { mid: "mid.sinsender", text: "x" } },
+          ],
+        },
+      ],
+    };
+    let ev: ReturnType<typeof parsearInstagram> = [];
+    expect(() => {
+      ev = parsearInstagram(payload, NEGOCIO);
+    }).not.toThrow();
+    expect(ev).toHaveLength(1);
+    expect(ev[0]).toMatchObject({ clase: "mensaje", m: { idExterno: "mid.ok", texto: "hola" } });
+  });
+
+  it("sin timestamp usa la hora actual en ISO", () => {
+    const ev = parsearInstagram(
+      envolver([
+        { sender: { id: "A" }, recipient: { id: NEGOCIO }, message: { mid: "mid.t", text: "hola" } },
+      ]),
+      NEGOCIO,
+    );
+    expect(ev).toHaveLength(1);
+    const fecha = ev[0]?.clase === "mensaje" ? ev[0].m.fecha : "";
+    expect(new Date(fecha).toISOString()).toBe(fecha);
+  });
 });

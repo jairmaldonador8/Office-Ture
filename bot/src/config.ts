@@ -43,7 +43,8 @@ export function duenos(c: Config): Dueno[] {
     .map((par) => {
       const [nombre = "", telefono = ""] = par.split(":");
       return { nombre: nombre.trim(), telefono: telefono.trim() };
-    });
+    })
+    .filter((d) => ultimos10(d.telefono) !== "");
 }
 
 export const ultimos10 = (numero: string): string => numero.replace(/\D/g, "").slice(-10);

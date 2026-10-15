@@ -40,4 +40,10 @@ describe("config", () => {
     expect(esDueno(c, "528111111111")).toBe(true);
     expect(esDueno(c, "5218133333333")).toBe(false);
   });
+
+  it("descarta dueños sin teléfono y nunca reconoce un número vacío", () => {
+    const c = cargarConfig({ ...envBase, DUENOS: "Bryan:5218111111111,Fantasma:,Otro:abc" });
+    expect(duenos(c)).toEqual([{ nombre: "Bryan", telefono: "5218111111111" }]);
+    expect(esDueno(c, "")).toBe(false);
+  });
 });

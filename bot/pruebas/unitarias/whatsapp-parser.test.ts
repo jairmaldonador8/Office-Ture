@@ -130,4 +130,55 @@ describe("parsearWhatsApp", () => {
     expect(parsearWhatsApp({ object: "page" })).toEqual([]);
     expect(parsearWhatsApp(null)).toEqual([]);
   });
+
+  it("no lanza con payloads malformados y conserva los mensajes válidos", () => {
+    const payload = {
+      object: "whatsapp_business_account",
+      entry: [
+        null,
+        { changes: "x" },
+        {
+          changes: [
+            null,
+            {
+              field: "messages",
+              value: {
+                contacts: "x",
+                messages: [
+                  null,
+                  { from: "5218100000000", timestamp: "1791561600", type: "text", text: { body: "sin id" } },
+                  { id: "wamid.sinfrom", timestamp: "1791561600", type: "text" },
+                  {
+                    from: "5218100000000",
+                    id: "wamid.ok",
+                    timestamp: "1791561600",
+                    type: "text",
+                    text: { body: "hola" },
+                  },
+                ],
+              },
+            },
+            { field: "smb_message_echoes", value: { message_echoes: "x" } },
+          ],
+        },
+      ],
+    };
+    let ev: ReturnType<typeof parsearWhatsApp> = [];
+    expect(() => {
+      ev = parsearWhatsApp(payload);
+    }).not.toThrow();
+    expect(ev).toHaveLength(1);
+    expect(ev[0]).toMatchObject({ clase: "mensaje", m: { idExterno: "wamid.ok", texto: "hola" } });
+  });
+
+  it("sin timestamp usa la hora actual en ISO", () => {
+    const ev = parsearWhatsApp(
+      envolver("messages", {
+        messages: [{ from: "5218100000000", id: "wamid.t", type: "text", text: { body: "hola" } }],
+      }),
+    );
+    expect(ev).toHaveLength(1);
+    const fecha = ev[0]?.clase === "mensaje" ? ev[0].m.fecha : "";
+    expect(new Date(fecha).toISOString()).toBe(fecha);
+  });
 });
