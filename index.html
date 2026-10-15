@@ -19,6 +19,7 @@
 <link rel="preload" href="img/proy-despues.webp" as="image" type="image/webp">
 <link rel="stylesheet" href="css/estilo.css">
 <link rel="stylesheet" href="css/turi.css">
+<link rel="stylesheet" href="css/animaciones.css">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -133,9 +134,10 @@
         <div class="lamina-texto">
           <p class="lamina-num" aria-hidden="true">01</p>
           <p class="ceja">Entrega inmediata</p>
-          <h2>Lo que tenemos <em>hoy.</em></h2>
+          <h2 data-anim="palabras">Lo que tenemos <em>hoy.</em></h2>
           <p class="lamina-entrada">Escritorios, sillas y archiveros en inventario, listos para entregarse en 1&nbsp;a&nbsp;2 días en Monterrey y su área metropolitana. Sin tiempos de fabricación.</p>
-          <ol class="lamina-indice">
+          <span class="lamina-raya" data-anim="linea"></span>
+          <ol class="lamina-indice" data-anim="escalonado">
             <li><span>OT-ES01</span><b>Escritorio lineal</b><i>$2,750</i></li>
             <li><span>OT-ES03</span><b>Semiejecutivo en L con librero</b><i>$11,500</i></li>
             <li><span>OT-AL01</span><b>Archivero vertical de 4 gavetas</b><i>$5,200</i></li>
@@ -158,9 +160,10 @@
         <div class="lamina-texto">
           <p class="lamina-num" aria-hidden="true">02</p>
           <p class="ceja">Equipamiento de oficinas</p>
-          <h2>Tu empresa, <em>completa.</em></h2>
+          <h2 data-anim="palabras">Tu empresa, <em>completa.</em></h2>
           <p class="lamina-entrada">Estaciones de trabajo, salas de juntas, recepción y dirección fabricados a la medida de tu espacio, entregados e instalados por nuestro equipo.</p>
-          <ol class="lamina-indice espacios">
+          <span class="lamina-raya" data-anim="linea"></span>
+          <ol class="lamina-indice espacios" data-anim="escalonado">
             <li><span>01</span><b>Estaciones de trabajo</b><i>por puesto</i></li>
             <li><span>02</span><b>Salas de juntas</b><i>a la medida</i></li>
             <li><span>03</span><b>Recepción</b><i>a la medida</i></li>
@@ -170,7 +173,7 @@
         </div>
         <figure class="lamina-foto">
           <img src="img/proy-despues.webp" alt="Oficina corporativa equipada con estaciones de trabajo y mamparas" width="1600" height="900" loading="lazy">
-          <figcaption><b>+20</b><span>oficinas equipadas en Nuevo León</span></figcaption>
+          <figcaption><b data-anim="cuenta" data-hasta="20" data-prefijo="+">+20</b><span>oficinas equipadas en Nuevo León</span></figcaption>
         </figure>
       </div>
       <footer class="lamina-pie"><span>Diseño, fabricación e instalación</span><span class="lamina-folio">03</span></footer>
@@ -187,7 +190,7 @@
   </picture>
   <div class="cont firma-texto aparece">
     <p class="ceja">Nosotros</p>
-    <h2>Diseño para una vida <em>real.</em></h2>
+    <h2 data-anim="palabras">Diseño para una vida <em>real.</em></h2>
     <p>Diseñamos, fabricamos e instalamos mobiliario de oficina pensado en las personas que lo usan.</p>
   </div>
 </section>
@@ -196,10 +199,10 @@
 <section class="galeria" id="galeria" aria-label="Galería de proyectos">
   <div class="cont galeria-cabeza aparece">
     <p class="ceja">Galería</p>
-    <h2>Espacios <em>reales.</em></h2>
+    <h2 data-anim="palabras">Espacios <em>reales.</em></h2>
   </div>
   <div class="gal-filas">
-    <div class="gal-fila" data-dir="1">
+    <div class="gal-fila" data-dir="1" data-anim="escalonado">
       <figure class="gal-foto"><img src="img/hero.webp" alt="Sala de trabajo con escritorios negros y sillas de malla" width="1400" height="1866" loading="lazy" draggable="false"><figcaption>Corporativo</figcaption></figure>
       <figure class="gal-foto"><img src="img/proy-direccion.webp" alt="Escritorio ejecutivo en tono grafito con librero" width="1200" height="1600" loading="lazy" draggable="false"><figcaption>Dirección</figcaption></figure>
       <figure class="gal-foto"><img src="img/proy-estaciones.webp" alt="Estaciones de trabajo con mamparas en un despacho" width="1200" height="1600" loading="lazy" draggable="false"><figcaption>Despacho</figcaption></figure>
@@ -210,49 +213,27 @@
       <figure class="gal-foto"><img src="img/foto-ejecutivo.webp" alt="Escritorio ejecutivo en L nogal con librero" width="1200" height="1600" loading="lazy" draggable="false"><figcaption>Ejecutivo</figcaption></figure>
       <figure class="gal-foto"><img src="img/red-1.webp" alt="Mesa de juntas pequeña en roble claro" width="720" height="1280" loading="lazy" draggable="false"><figcaption>Juntas</figcaption></figure>
     </div>
-    <div class="gal-fila baja" data-dir="-1">
-      <figure class="gal-foto ancha"><img src="img/proy-despues.webp" alt="Oficina terminada con estaciones y mamparas" width="1600" height="900" loading="lazy" draggable="false"><figcaption>Oficina completa</figcaption></figure>
-      <figure class="gal-pieza sage"><img src="img/prod-juntas.webp" alt="Mesa de juntas en nogal con ocho sillas" width="1200" height="1200" loading="lazy" draggable="false"><figcaption>Sala de juntas</figcaption></figure>
-      <figure class="gal-foto ancha"><img src="img/proy-recepcion.webp" alt="Mostrador de recepción gris sobre mármol" width="1200" height="900" loading="lazy" draggable="false"><figcaption>Recepción</figcaption></figure>
-      <figure class="gal-pieza beige"><img src="img/prod-escuadra-silla.webp" alt="Escritorio en escuadra con silla ergonómica" width="1200" height="1200" loading="lazy" draggable="false"><figcaption>Escuadra</figcaption></figure>
-      <figure class="gal-foto ancha"><img src="img/proy-antes.webp" alt="Local vacío antes de equiparse" width="1400" height="1050" loading="lazy" draggable="false"><figcaption>Antes</figcaption></figure>
-      <figure class="gal-pieza sage"><img src="img/silla-ejecutiva.webp" alt="Silla ejecutiva de malla con cabecera" width="1200" height="1200" loading="lazy" draggable="false"><figcaption>Sillería</figcaption></figure>
-      <figure class="gal-foto ancha"><img src="img/proy-individual.webp" alt="Estación individual con silla ejecutiva blanca" width="1200" height="675" loading="lazy" draggable="false"><figcaption>Estación individual</figcaption></figure>
-      <figure class="gal-pieza beige"><img src="img/prod-recepcion.webp" alt="Mostrador de recepción en madera clara y negro" width="1200" height="1200" loading="lazy" draggable="false"><figcaption>Recepción a la medida</figcaption></figure>
-      <figure class="gal-pieza sage"><img src="img/prod-direccion.webp" alt="Escritorio de dirección en U color caoba" width="1200" height="1200" loading="lazy" draggable="false"><figcaption>Dirección en U</figcaption></figure>
-    </div>
   </div>
 </section>
 
 <!-- ============ 03 PROYECTOS ============ -->
-<section class="proyectos" id="proyectos">
-  <div class="cont">
-    <div class="seccion-cabeza aparece">
-      <p class="ceja">03 &middot; Proyectos</p>
-      <h2>De espacio vacío a oficina <em>operando.</em></h2>
-      <p class="bajada">Así cambia un lugar cuando el mobiliario se piensa para las personas que lo usan. Cada proyecto empieza con una visita, un plano y una cotización clara.</p>
+<section class="proyectos montaje" id="proyectos">
+  <div class="mt-rejilla">
+    <div class="mt-escena" aria-hidden="true">
+      <img class="mt-capa" src="img/proy-instalacion.webp" alt="" width="1200" height="1600" loading="lazy">
+      <img class="mt-capa" src="img/proy-durante.webp" alt="" width="1400" height="1867" loading="lazy">
+      <img class="mt-capa" src="img/proy-antes.webp" alt="" width="1400" height="1050" loading="lazy">
+      <div class="mt-indice"><i class="activa"></i><i></i><i></i></div>
     </div>
-    <ol class="historia aparece">
-      <li>
-        <figure><img src="img/proy-antes.webp" alt="Local vacío antes de equiparse, con iluminación instalada y piso de concreto" width="1400" height="1050" loading="lazy"></figure>
-        <div class="historia-pie"><small>01 &middot; Antes</small><b>Un espacio en blanco</b><p>Medimos, escuchamos y proponemos la distribución.</p></div>
-      </li>
-      <li>
-        <figure><img src="img/proy-durante.webp" alt="Estaciones de trabajo en proceso de instalación en sitio" width="1400" height="1867" loading="lazy"></figure>
-        <div class="historia-pie"><small>02 &middot; Durante</small><b>Fabricamos e instalamos</b><p>Estructuras, cubiertas y cajoneras armadas en tu oficina.</p></div>
-      </li>
-      <li>
-        <figure><img src="img/proy-despues.webp" alt="Oficina terminada con estaciones de trabajo, mamparas y sillas ejecutivas" width="1600" height="900" loading="lazy"></figure>
-        <div class="historia-pie"><small>03 &middot; Después</small><b>Lista para trabajar</b><p>Entregamos tu oficina operando, sin pendientes.</p></div>
-      </li>
-    </ol>
-    <div class="mosaico aparece">
-      <figure class="alto"><img src="img/proy-estaciones.webp" alt="Estaciones de trabajo con mamparas de vidrio esmerilado" width="1200" height="1600" loading="lazy"><figcaption><small>Despacho</small>Estaciones con mamparas</figcaption></figure>
-      <figure><img src="img/proy-recepcion.webp" alt="Mostrador de recepción en gris sobre piso de mármol" width="1200" height="900" loading="lazy"><figcaption><small>Recepción</small>Mostrador a la medida</figcaption></figure>
-      <figure><img src="img/proy-direccion.webp" alt="Escritorio ejecutivo con librero en tono grafito" width="1200" height="1600" loading="lazy"><figcaption><small>Dirección</small>Ejecutivo con librero</figcaption></figure>
-      <figure class="ancho"><img src="img/proy-individual.webp" alt="Silla ejecutiva de malla blanca con escritorio de estructura metálica" width="1200" height="675" loading="lazy"><figcaption><small>Empresa</small>Estación individual con sillería ejecutiva</figcaption></figure>
+    <div class="mt-pasos">
+      <div class="mt-paso mt-intro">
+        <p class="ceja">03 &middot; Proyectos</p>
+        <h2 data-anim="palabras">De espacio vacío a oficina <em>operando.</em></h2>
+      </div>
+      <div class="mt-paso"><span class="num">01</span><h3>Un espacio en blanco</h3><p>Medimos, escuchamos y proponemos la distribución.</p></div>
+      <div class="mt-paso"><span class="num">02</span><h3>Fabricamos e instalamos</h3><p>Estructuras, cubiertas y cajoneras armadas en tu oficina.</p></div>
+      <div class="mt-paso"><span class="num">03</span><h3>Lista para trabajar</h3><p>Entregamos tu oficina operando, sin pendientes.</p></div>
     </div>
-    <p class="proyectos-nota aparece"><b>+20 oficinas equipadas</b> en Nuevo León. Despachos, corporativos, plantas y consultorios de Monterrey y su área metropolitana.</p>
   </div>
 </section>
 
@@ -261,9 +242,9 @@
   <div class="cont">
     <div class="seccion-cabeza aparece">
       <p class="ceja">04 &middot; Cómo trabajamos</p>
-      <h2>Cuatro pasos y tu oficina queda <em>lista.</em></h2>
+      <h2 data-anim="palabras">Cuatro pasos y tu oficina queda <em>lista.</em></h2>
     </div>
-    <ol class="pasos aparece">
+    <ol class="pasos" data-anim="escalonado">
       <li><span class="n">01</span><h3>Nos cuentas tu espacio</h3><p>Medidas, cuántas personas y qué mobiliario buscas. Por WhatsApp o en una visita.</p></li>
       <li><span class="n">02</span><h3>Cotización en 30 minutos</h3><p>Opciones claras, con precio, tiempo de entrega y factura.</p></li>
       <li><span class="n">03</span><h3>Fabricamos o surtimos</h3><p>De inventario en 1&nbsp;a&nbsp;2 días, o a la medida para tu proyecto.</p></li>
@@ -281,7 +262,7 @@
   <div class="cont redes-rejilla">
     <div class="redes-texto aparece">
       <p class="ceja">Síguenos</p>
-      <h2>Proyectos nuevos, precios y entregas, <em>cada semana.</em></h2>
+      <h2 data-anim="palabras">Proyectos nuevos, precios y entregas, <em>cada semana.</em></h2>
       <p>En Facebook e Instagram publicamos las oficinas que vamos entregando, el inventario de entrega inmediata y consejos para elegir el mueble correcto para cada puesto.</p>
       <ul class="redes-lista">
         <li><a href="https://www.instagram.com/officeturebl/" target="_blank" rel="noopener"><b>Instagram</b><span>@officeturebl</span><svg><use href="#i-flecha"/></svg></a></li>
@@ -302,7 +283,7 @@
   <div class="cont prov-rejilla">
     <div class="prov-texto aparece">
       <p class="ceja">05 &middot; Proveedores</p>
-      <h2>¿Fabricas o distribuyes insumos? <em>Hablemos.</em></h2>
+      <h2 data-anim="palabras">¿Fabricas o distribuyes insumos? <em>Hablemos.</em></h2>
       <p>Estamos creciendo y buscamos proveedores serios para mantener inventario de entrega inmediata y surtir proyectos completos.</p>
       <ul class="prov-lista">
         <li>Melamina, tableros y cubiertas</li>
@@ -335,7 +316,7 @@
   <div class="cont contacto-rejilla">
     <div class="contacto-texto aparece">
       <p class="ceja">06 &middot; Contacto</p>
-      <h2>Estamos en San Nicolás <em>de los Garza.</em></h2>
+      <h2 data-anim="palabras">Estamos en San Nicolás <em>de los Garza.</em></h2>
       <dl class="datos">
         <div><dt>Dirección</dt><dd>Salina Cruz #633, Col. Vicente Guerrero, San Nicolás de los Garza, N.&nbsp;L.</dd></div>
         <div><dt>Teléfono</dt><dd><a href="tel:+528110601298">81 1060 1298</a></dd></div>
@@ -379,5 +360,7 @@
 <script src="js/turi.js" defer></script>
 <script src="js/espacio.js" defer></script>
 <script src="js/galeria.js" defer></script>
+<script src="js/animaciones.js" defer></script>
+<script src="js/montaje.js" defer></script>
 </body>
 </html>

@@ -1,0 +1,55 @@
+/* ============================================================================
+   ANIMACIONES · biblioteca para ir sumando al sitio
+   Se activan con data-anim="tipo" en cualquier elemento; js/animaciones.js les pone
+   la clase .anim-in cuando entran en pantalla. Retraso opcional: style="--d:.2s".
+   Con «reducir movimiento» todo aparece ya en su lugar.
+
+   sube        el bloque sube y aparece
+   revela      la imagen se descubre de abajo hacia arriba
+   barrido     la imagen se descubre de izquierda a derecha
+   zoom        la foto entra con un acercamiento lento que se asienta
+   palabras    el título aparece palabra por palabra
+   linea       una línea se dibuja de izquierda a derecha
+   escalonado  los hijos aparecen uno tras otro
+   cuenta      un número cuenta desde cero (data-hasta="20", data-prefijo="+")
+   parallax    la foto se desplaza más lento que la página (data-parallax="0.12")
+   ========================================================================== */
+
+[data-anim]{--d:0s;--dur:1s;--curva:cubic-bezier(.2,.7,.2,1)}
+
+[data-anim="sube"]{opacity:0;transform:translateY(34px);transition:opacity var(--dur) var(--curva) var(--d),transform var(--dur) var(--curva) var(--d)}
+[data-anim="sube"].anim-in{opacity:1;transform:none}
+
+[data-anim="revela"]{clip-path:inset(100% 0 0 0);transition:clip-path 1.3s cubic-bezier(.7,0,.2,1) var(--d)}
+[data-anim="revela"].anim-in{clip-path:inset(0 0 0 0)}
+
+[data-anim="barrido"]{clip-path:inset(0 100% 0 0);transition:clip-path 1.4s cubic-bezier(.7,0,.2,1) var(--d)}
+[data-anim="barrido"].anim-in{clip-path:inset(0 0 0 0)}
+
+[data-anim="zoom"]{overflow:hidden}
+[data-anim="zoom"] img{transform:scale(1.18);opacity:.2;transition:transform 2.2s var(--curva) var(--d),opacity 1.2s ease var(--d)}
+[data-anim="zoom"].anim-in img{transform:scale(1);opacity:1}
+
+/* la caja de cada palabra deja aire arriba y abajo para no cortar acentos (É, ñ) ni colas (p, q, y) */
+[data-anim="palabras"] .anim-palabra{display:inline-block;overflow:hidden;vertical-align:top;padding:.18em .06em .24em;margin:-.18em -.06em -.24em}
+[data-anim="palabras"] .anim-palabra>span{display:inline-block;transform:translateY(135%);transition:transform .9s var(--curva) calc(var(--d) + var(--i) * 70ms)}
+[data-anim="palabras"].anim-in .anim-palabra>span{transform:none}
+
+[data-anim="linea"]{transform:scaleX(0);transform-origin:left;transition:transform 1.2s cubic-bezier(.7,0,.2,1) var(--d)}
+[data-anim="linea"].anim-in{transform:none}
+
+[data-anim="escalonado"]>*{opacity:0;transform:translateY(24px);transition:opacity .8s var(--curva),transform .8s var(--curva);transition-delay:calc(var(--d) + var(--i, 0) * 110ms)}
+[data-anim="escalonado"].anim-in>*{opacity:1;transform:none}
+
+[data-anim="cuenta"]{font-variant-numeric:tabular-nums lining-nums}
+
+[data-parallax]{will-change:transform}
+
+@media (prefers-reduced-motion:reduce){
+  [data-anim],[data-anim] *{transition:none!important}
+  [data-anim="sube"],[data-anim="escalonado"]>*{opacity:1;transform:none}
+  [data-anim="revela"],[data-anim="barrido"]{clip-path:none}
+  [data-anim="zoom"] img{transform:none;opacity:1}
+  [data-anim="palabras"] .anim-palabra>span{transform:none}
+  [data-anim="linea"]{transform:none}
+}

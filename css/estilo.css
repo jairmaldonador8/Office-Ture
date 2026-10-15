@@ -207,7 +207,8 @@ body.menu-abierto .barra .logo-claro{opacity:1;visibility:visible}
 .lamina-texto .ceja{margin:0}
 .lamina-texto h2{font-size:clamp(34px,5.4vw,60px);letter-spacing:-.045em;line-height:1}
 .lamina-entrada{font-size:15.5px;line-height:1.6;max-width:42ch}
-.lamina-indice{width:100%;margin:8px 0 10px;border-top:1px solid var(--tinta)}
+.lamina-raya{display:block;width:100%;height:1px;background:var(--tinta);margin-top:8px}
+.lamina-indice{width:100%;margin:0 0 10px}
 .lamina-indice li{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--linea);font-size:14px}
 .lamina-indice span{font-size:10px;letter-spacing:.16em;font-weight:500;color:var(--sage)}
 .lamina-indice b{font-weight:400;color:var(--tinta)}
@@ -297,31 +298,35 @@ body.menu-abierto .barra .logo-claro{opacity:1;visibility:visible}
 }
 @media (prefers-reduced-motion:reduce){.gal-foto img,.gal-pieza img{transition:none}}
 
-/* ---------- 03 proyectos ---------- */
-.proyectos{padding:96px 0}
-.historia{display:grid;gap:30px;margin-bottom:64px}
-.historia li{display:grid;gap:14px}
-.historia figure{margin:0;aspect-ratio:4/3;overflow:hidden;border-radius:var(--radio);background:var(--beige-claro)}
-.historia img{width:100%;height:100%;object-fit:cover;filter:var(--foto);transition:transform 1s var(--suave)}
-.historia li:hover img{transform:scale(1.03)}
-.historia-pie{padding-top:14px;border-top:1px solid var(--linea)}
-.historia-pie small{display:block;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;font-weight:500;color:var(--sage);margin-bottom:8px}
-.historia-pie b{display:block;font-size:18px;color:var(--tinta);letter-spacing:-.015em;margin-bottom:4px}
-.historia-pie p{font-size:14px;line-height:1.55}
-/* rejilla tipo muuto: foto y pie debajo */
-.mosaico{display:grid;grid-template-columns:1fr 1fr;gap:28px 16px}
-.mosaico figure{margin:0;display:grid;gap:12px}
-.mosaico figure img{width:100%;aspect-ratio:4/5;object-fit:cover;filter:var(--foto);border-radius:var(--radio);background:var(--beige-claro);transition:transform 1s var(--suave)}
-.mosaico figure:hover img{transform:scale(1.02)}
-.mosaico figcaption{font-size:14.5px;font-weight:400;line-height:1.3;color:var(--tinta);padding-top:12px;border-top:1px solid var(--linea)}
-.mosaico figcaption small{display:block;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--sage);margin-bottom:5px;font-weight:500}
-.proyectos-nota{margin-top:40px;font-size:15.5px;max-width:56ch}
-.proyectos-nota b{color:var(--tinta)}
-@media (min-width:760px){
-  .proyectos{padding:130px 0}
-  .historia{grid-template-columns:repeat(3,1fr);gap:24px;margin-bottom:96px}
-  .mosaico{grid-template-columns:repeat(4,1fr);gap:24px}
-  .mosaico figcaption{font-size:15.5px}
+/* ---------- 03 proyectos: la oficina se monta con el scroll ----------
+   Tres fotos del mismo espacio encimadas (antes arriba, después abajo). js/montaje.js
+   vuelve transparente la de encima conforme bajas, así la oficina se va armando:
+   vacía, en instalación y terminada. La foto se queda fija mientras pasan los pasos.
+   En el teléfono la foto llena la pantalla y cada paso sube sobre ella, abajo. */
+.montaje{position:relative;background:var(--tinta);color:var(--marfil)}
+.mt-rejilla{display:grid}
+.mt-escena{position:sticky;top:0;align-self:start;height:100vh;height:100svh;overflow:hidden;z-index:0}
+.mt-capa{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:var(--foto);will-change:opacity,transform}
+.mt-escena::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(31,36,27,.25) 0%,rgba(31,36,27,0) 30%,rgba(31,36,27,.88) 80%)}
+.mt-indice{position:absolute;left:20px;top:18px;z-index:2;display:flex;gap:6px}
+.mt-indice i{width:28px;height:2px;background:rgba(239,234,224,.3);transition:background .4s}
+.mt-indice i.activa{background:var(--marfil)}
+.mt-pasos{position:relative;z-index:1;margin-top:-100vh;margin-top:-100svh}
+.mt-paso{min-height:100vh;min-height:100svh;display:grid;align-content:end;gap:14px;padding:40px var(--gutter) 72px}
+.mt-paso .num{font-size:clamp(70px,12vw,150px);font-weight:200;letter-spacing:-.06em;line-height:.8;color:rgba(239,234,224,.25);transition:color .6s}
+.mt-paso.activa .num{color:var(--beige)}
+.mt-paso h3{color:var(--marfil);font-size:clamp(30px,4vw,52px);letter-spacing:-.04em}
+.mt-paso p{color:rgba(239,234,224,.78);max-width:34ch;font-size:16px}
+.mt-intro .ceja{color:var(--sage-claro);margin:0}
+.mt-intro h2{color:var(--marfil);font-size:clamp(38px,6vw,84px);letter-spacing:-.05em;line-height:.95;max-width:12ch}
+.mt-intro h2 em{color:var(--beige)}
+@media (min-width:900px){
+  .mt-rejilla{grid-template-columns:1fr 1.2fr}
+  .mt-escena{grid-column:2;grid-row:1}
+  .mt-escena::after{background:linear-gradient(90deg,rgba(31,36,27,.35),rgba(31,36,27,0) 30%)}
+  .mt-indice{left:32px;top:auto;bottom:32px}
+  .mt-pasos{grid-column:1;grid-row:1;margin-top:0}
+  .mt-paso{align-content:center;padding:0 64px}
 }
 
 /* ---------- 04 proceso ---------- */

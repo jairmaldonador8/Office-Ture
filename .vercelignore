@@ -5,3 +5,4 @@ docs/
 *.md
 .env*
 node_modules/
+propuestas/
