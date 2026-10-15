@@ -5,3 +5,8 @@ Thumbs.db
 *.log
 .worktrees/
 .claude/ultrapowers-preferences.json
+
+bot/node_modules/
+bot/.env
+bot/.env.local
+bot/pruebas/transcripciones/
