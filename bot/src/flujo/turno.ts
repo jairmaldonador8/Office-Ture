@@ -1,7 +1,14 @@
 import type { ContextoHerramientas, Escalacion } from "../cerebro/herramientas.js";
 import { aMensajesClaude, type ImagenLista } from "../cerebro/historial.js";
 import { sistemaDinamico, sistemaEstatico } from "../cerebro/prompt.js";
-import { ErrorRespuesta, type ResultadoRespuesta, responder, resumirHilo } from "../cerebro/responder.js";
+import {
+  ErrorRespuesta,
+  type ModeloCliente,
+  type ResultadoRespuesta,
+  responder,
+  resumirHilo,
+  type Uso,
+} from "../cerebro/responder.js";
 import type { Contacto, Conversacion, Mensaje } from "../datos/tipos.js";
 import { horas } from "../hora.js";
 import type { Deps } from "./deps.js";
@@ -18,6 +25,9 @@ const INTENTOS_ENVIO = 3;
 
 const AVISO_ESPERA = "Bryan te atiende en un momento.";
 const CORTESIA = "Dame un momento, en seguida te atiendo.";
+
+/** Marca con el último mensaje del cliente que tenía en cuenta la respuesta descartada por vieja. */
+const marcaDescarte = (conversacionId: string) => `turno_descartado:${conversacionId}`;
 
 const escalacionTecnica = (resumen: string): Escalacion => ({
   motivo: "error_modelo",
@@ -78,24 +88,38 @@ async function rotarHilo(
     ...(conv.resumenHilo ? [`Resumen anterior: ${conv.resumenHilo}`] : []),
     ...mensajes.map((m) => `${m.autor}: ${m.texto ?? `[${m.tipo}]`}`),
   ].join("\n");
+  // El resumen pasa por un modelo que suma el uso, para registrarlo igual que las respuestas.
+  const uso: Uso = { entrada: 0, salida: 0, cache: 0 };
+  const medido: ModeloCliente = {
+    crear: async (p) => {
+      const r = await d.modelo.crear(p);
+      uso.entrada += r.usage?.input_tokens ?? 0;
+      uso.salida += r.usage?.output_tokens ?? 0;
+      uso.cache += r.usage?.cache_read_input_tokens ?? 0;
+      return r;
+    },
+  };
   const inicio = Date.now();
-  let resumen: string;
-  try {
-    resumen = await resumirHilo(d.modelo, d.config.CLAUDE_MODEL, transcripcion);
-  } catch (e) {
-    console.error("resumen de hilo", conv.id, e);
-    await d.repo.registrarLlamadaModelo({
+  const registrar = (error?: string) =>
+    d.repo.registrarLlamadaModelo({
       conversacionId: conv.id,
       modelo: d.config.CLAUDE_MODEL,
-      tokensEntrada: 0,
-      tokensSalida: 0,
-      tokensCache: 0,
+      tokensEntrada: uso.entrada,
+      tokensSalida: uso.salida,
+      tokensCache: uso.cache,
       herramientas: [],
       latenciaMs: Date.now() - inicio,
-      error: `resumen: ${e instanceof Error ? e.message : String(e)}`,
+      ...(error ? { error } : {}),
     });
+  let resumen: string;
+  try {
+    resumen = await resumirHilo(medido, d.config.CLAUDE_MODEL, transcripcion);
+  } catch (e) {
+    console.error("resumen de hilo", conv.id, e);
+    await registrar(`resumen: ${e instanceof Error ? e.message : String(e)}`);
     return { conv, mensajes };
   }
+  await registrar();
   const hilo = conv.hilo + 1;
   await d.repo.moverAlHilo(conv.id, hilo, MENSAJES_QUE_PASAN_AL_NUEVO_HILO);
   await d.repo.actualizarConversacion(conv.id, { hilo, resumenHilo: resumen });
@@ -122,6 +146,13 @@ async function turno(conversacionId: string, d: Deps): Promise<void> {
   const inicial = await d.repo.obtenerConversacion(conversacionId);
   const leidos = await d.repo.mensajesDelHilo(inicial.id, inicial.hilo);
   const ultimo = ultimoVisible(leidos);
+  // Turno retomado tras una caída entre el envío y el cierre: la respuesta ya salió (su fila
+  // es la última) pero ultimoBot no se actualizó. Se completa el cierre sin llamar al modelo
+  // ni volver a enviar. La escalación, si la hubo, ya quedó guardada antes del envío.
+  if (ultimo?.autor === "bot" && (!inicial.ultimoBot || ultimo.creado > inicial.ultimoBot)) {
+    await cerrarTurno(inicial, ultimo.creado, d);
+    return;
+  }
   if (ultimo?.autor !== "cliente") return;
   const contacto = await d.repo.obtenerContacto(inicial.contactoId);
 
@@ -170,7 +201,7 @@ async function turno(conversacionId: string, d: Deps): Promise<void> {
         ...(conv.resumenHilo ? { resumenHilo: conv.resumenHilo } : {}),
         ...(contacto.nombre ? { nombreCliente: contacto.nombre } : {}),
       }),
-      mensajes: aMensajesClaude(mensajes, imagenes),
+      mensajes: aMensajesClaude(mensajes, imagenes, d.ahora()),
       ctx,
     });
   } catch (e) {
@@ -198,10 +229,36 @@ async function turno(conversacionId: string, d: Deps): Promise<void> {
     latenciaMs: Date.now() - inicio,
   });
 
+  const vistos = new Set(mensajes.map((m) => m.id));
+  const nuevos = (await d.repo.mensajesDelHilo(conv.id, conv.hilo)).filter((m) => !vistos.has(m.id));
+  // Si Bryan escribió desde su app mientras Claude pensaba, el eco ya puso el modo humano:
+  // él atiende y no se manda nada ni se programa seguimiento.
+  const actual = await d.repo.obtenerConversacion(conv.id);
+  if (actual.modo !== "bot" || nuevos.some((m) => m.autor === "humano")) return;
+
   // Si el cliente escribió mientras Claude pensaba, la respuesta ya quedó vieja: no se manda y
-  // el turno siguiente (responder_en ya quedó fijado) contesta todo junto. Si se mandara, su
-  // fila quedaría después del mensaje nuevo y ese mensaje se quedaría sin respuesta.
-  if (await llegoOtroMensaje(conv, mensajes, d)) return;
+  // el turno siguiente (responder_en ya quedó fijado) contesta todo junto. Dos excepciones:
+  // - Claude escaló: la despedida y la alerta salen igual, así la escalación no se pierde.
+  // - Ya se descartó una respuesta seguida (la marca apunta a un mensaje del cliente que sigue
+  //   sin respuesta): esta sale, para que un cliente que escribe sin parar no se quede sin
+  //   contestar. Su fila se fecha justo después de lo que vio el modelo, antes del mensaje
+  //   nuevo, y así ese mensaje recibe su propio turno.
+  let creado: Date | undefined;
+  if (!ctx.escalacion && nuevos.some((m) => m.autor === "cliente")) {
+    if (!(await yaSeDescartoUna(conv.id, mensajes, d))) {
+      await d.repo.escribirMarca(marcaDescarte(conv.id), ultimo.id);
+      return;
+    }
+    const base = mensajes.at(-1)?.creado ?? ultimo.creado;
+    creado = new Date(base.getTime() + 1);
+  }
+  let orden = 0;
+  const fecha = () => (creado ? { creado: new Date(creado.getTime() + orden++) } : {});
+
+  // La escalación se guarda (y Bryan recibe la alerta) antes de mandar la despedida: si el
+  // proceso muere después de enviar, el turno retomado no tiene cómo recuperarla. Enviar al
+  // cliente no depende del modo, así que esperando_humano no bloquea la despedida.
+  if (ctx.escalacion) await ejecutarEscalacion(conv.id, ctx.escalacion, d);
 
   for (const foto of ctx.fotos.slice(0, MAX_FOTOS)) {
     try {
@@ -210,14 +267,20 @@ async function turno(conversacionId: string, d: Deps): Promise<void> {
         conv,
         contacto,
         { tipo: "imagen", url: foto.url, pie: foto.pie },
-        { intentos: INTENTOS_ENVIO },
+        { intentos: INTENTOS_ENVIO, ...fecha() },
       );
     } catch (e) {
       console.error("foto", conv.id, e);
     }
   }
   try {
-    await enviarAlCliente(d, conv, contacto, { tipo: "texto", texto: r.texto }, { intentos: INTENTOS_ENVIO });
+    await enviarAlCliente(
+      d,
+      conv,
+      contacto,
+      { tipo: "texto", texto: r.texto },
+      { intentos: INTENTOS_ENVIO, ...fecha() },
+    );
   } catch (e) {
     console.error("respuesta", conv.id, e);
     await ejecutarEscalacion(
@@ -231,27 +294,41 @@ async function turno(conversacionId: string, d: Deps): Promise<void> {
     return;
   }
 
-  const ahora = d.ahora();
-  const cambios: Partial<Conversacion> = { ultimoBot: ahora };
+  await cerrarTurno(conv, d.ahora(), d);
+}
+
+/**
+ * Cierre tras enviar: fija ultimoBot, abre la ventana gratuita de 72 h si es la primera
+ * respuesta a un cliente de anuncio y programa el siguiente toque (ninguno si se escaló:
+ * el modo ya es esperando_humano). Idempotente, para el turno retomado tras una caída.
+ */
+async function cerrarTurno(conv: Conversacion, cuando: Date, d: Deps): Promise<void> {
+  const cambios: Partial<Conversacion> = { ultimoBot: cuando };
   const primerCliente = conv.primerCliente;
   const vinoDeAnuncio =
     conv.canal === "whatsapp" && conv.referencia !== undefined && primerCliente !== undefined;
-  if (primerMensajeBot && vinoDeAnuncio && ahora.getTime() - primerCliente.getTime() < horas(24)) {
-    cambios.ventanaGratisHasta = new Date(ahora.getTime() + horas(72));
+  if (!conv.ultimoBot && vinoDeAnuncio && cuando.getTime() - primerCliente.getTime() < horas(24)) {
+    cambios.ventanaGratisHasta = new Date(cuando.getTime() + horas(72));
   }
   await d.repo.actualizarConversacion(conv.id, cambios);
-
-  if (ctx.escalacion) await ejecutarEscalacion(conv.id, ctx.escalacion, d);
-  else await programarSiguiente(conv.id, d);
+  await programarSiguiente(conv.id, d);
 }
 
-async function llegoOtroMensaje(conv: Conversacion, vistos: Mensaje[], d: Deps): Promise<boolean> {
-  const ids = new Set(vistos.map((m) => m.id));
-  const ahora = await d.repo.mensajesDelHilo(conv.id, conv.hilo);
-  return ahora.some((m) => m.autor === "cliente" && !ids.has(m.id));
+/** El turno anterior descartó su respuesta y los mensajes que tenía en cuenta siguen sin respuesta. */
+async function yaSeDescartoUna(conversacionId: string, mensajes: Mensaje[], d: Deps): Promise<boolean> {
+  const marca = await d.repo.leerMarca(marcaDescarte(conversacionId));
+  if (!marca) return false;
+  const i = mensajes.findLastIndex((m) => m.autor !== "cliente" && m.autor !== "sistema");
+  return mensajes.slice(i + 1).some((m) => m.id === marca);
 }
 
 async function fallaDelModelo(conv: Conversacion, contacto: Contacto, d: Deps): Promise<void> {
+  // Primero la escalación, por si el proceso muere después de la cortesía.
+  await ejecutarEscalacion(
+    conv.id,
+    escalacionTecnica("El asistente no pudo responder. Revisa la conversación y contesta desde tu app."),
+    d,
+  );
   try {
     await enviarAlCliente(
       d,
@@ -262,10 +339,7 @@ async function fallaDelModelo(conv: Conversacion, contacto: Contacto, d: Deps): 
     );
   } catch (e) {
     console.error("cortesía", conv.id, e);
+    return;
   }
-  await ejecutarEscalacion(
-    conv.id,
-    escalacionTecnica("El asistente no pudo responder. Revisa la conversación y contesta desde tu app."),
-    d,
-  );
+  await d.repo.actualizarConversacion(conv.id, { ultimoBot: d.ahora() });
 }

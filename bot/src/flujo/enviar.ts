@@ -11,6 +11,8 @@ export interface OpcionesEnvio {
    * siguiente lo repite (la Send API de Meta no tiene clave de idempotencia).
    */
   intentos?: number;
+  /** Fecha de la fila en el historial, si debe ordenarse antes de mensajes ya guardados. */
+  creado?: Date;
 }
 
 /**
@@ -44,6 +46,7 @@ export async function enviarAlCliente(
     autor: "bot",
     tipo: contenido.tipo,
     ...(texto ? { texto } : {}),
+    ...(opciones.creado ? { creado: opciones.creado } : {}),
   } as const;
   const fila = await d.repo.guardarMensaje(nuevo);
   const enviador = d.enviadores[conv.canal];

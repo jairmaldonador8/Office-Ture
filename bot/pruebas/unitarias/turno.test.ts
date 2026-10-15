@@ -82,10 +82,11 @@ describe("procesarTurno", () => {
     ]);
     await procesarTurno(conv.id, deps);
     expect(wa.textos(CLIENTE)).toEqual(["Claro, Bryan López te atiende en este mismo chat."]);
-    // La despedida sale antes que la alerta a Bryan.
+    // La escalación queda guardada (y la alerta sale) antes de la despedida: si el proceso
+    // muere después de enviar, Bryan ya está avisado.
     const iDespedida = wa.enviados.findIndex((e) => e.para === CLIENTE && e.tipo === "texto");
     const iAlerta = wa.enviados.findIndex((e) => e.para === BRYAN);
-    expect(iAlerta).toBeGreaterThan(iDespedida);
+    expect(iAlerta).toBeLessThan(iDespedida);
     expect((await repo.obtenerConversacion(conv.id)).modo).toBe("esperando_humano");
     expect(repo.seguimientos.filter((s) => !s.cancelado)).toEqual([]);
   });
@@ -146,6 +147,7 @@ describe("procesarTurno", () => {
       herramientas: ["buscar_productos"],
     });
     expect(repo.alertas.map((a) => a.motivo)).toEqual(["error_modelo"]);
+    expect(c.ultimoBot).toEqual(INICIO);
   });
 
   it("nunca manda texto rechazado o truncado: solo la cortesía", async () => {
@@ -258,6 +260,9 @@ describe("procesarTurno", () => {
     expect(nuevo).toHaveLength(7);
     expect(nuevo.at(-1)).toMatchObject({ autor: "bot", texto: "Claro, te las aparto." });
     expect(wa.textos(CLIENTE)).toEqual(["Claro, te las aparto."]);
+    // El resumen también cuenta como llamada al modelo.
+    expect(repo.llamadas).toHaveLength(2);
+    expect(repo.llamadas.every((l) => l.error === undefined)).toBe(true);
   });
 
   it("pasa la imagen reciente del cliente al modelo", async () => {
@@ -281,4 +286,149 @@ describe("procesarTurno", () => {
     const ultimo = vistos[0]?.messages.at(-1);
     expect(JSON.stringify(ultimo?.content)).toContain('"type":"image"');
   });
+
+  it("si Claude escaló y el cliente escribió a media respuesta, igual manda la despedida y escala", async () => {
+    let p: Awaited<ReturnType<typeof conMensaje>> | undefined;
+    const modelo = aMedia(
+      [
+        llamadaHerramienta("escalar", {
+          motivo: "pide_humano",
+          resumen: "Quiere hablar con una persona",
+          urgencia: "hoy",
+          tipo_cliente: "individual",
+        }),
+        respuestaTexto("Claro, Bryan López te atiende en este mismo chat."),
+      ],
+      async () => {
+        if (p) await procesarEvento(mensajeWa("¿me oyes?"), p.deps);
+      },
+    );
+    p = await conMensaje(modelo);
+    expect(await tomar(p)).toEqual([p.conv.id]);
+    await procesarTurno(p.conv.id, p.deps);
+    expect(p.wa.textos(CLIENTE)).toEqual(["Claro, Bryan López te atiende en este mismo chat."]);
+    expect((await p.repo.obtenerConversacion(p.conv.id)).modo).toBe("esperando_humano");
+    expect(p.repo.alertas.map((a) => a.motivo)).toEqual(["pide_humano"]);
+  });
+
+  it("si Bryan escribe desde su app a media respuesta, no manda nada ni programa seguimiento", async () => {
+    let p: Awaited<ReturnType<typeof conMensaje>> | undefined;
+    const modelo = aMedia([respuestaTexto("Son $1,490 + IVA.")], async () => {
+      if (p)
+        await procesarEvento(
+          {
+            clase: "eco",
+            e: {
+              canal: "whatsapp",
+              idExterno: "wamid.bryan",
+              para: CLIENTE,
+              texto: "Yo te atiendo",
+              fecha: "",
+            },
+          },
+          p.deps,
+        );
+    });
+    p = await conMensaje(modelo);
+    expect(await tomar(p)).toEqual([p.conv.id]);
+    await procesarTurno(p.conv.id, p.deps);
+    expect(p.wa.textos(CLIENTE)).toEqual([]);
+    const c = await p.repo.obtenerConversacion(p.conv.id);
+    expect(c.modo).toBe("humano");
+    expect(c.ultimoBot).toBeUndefined();
+    expect(p.repo.seguimientos.filter((s) => !s.cancelado)).toEqual([]);
+    expect(p.repo.llamadas).toHaveLength(1);
+    const bot = (await p.repo.mensajesDelHilo(p.conv.id, 1)).filter((m) => m.autor === "bot");
+    expect(bot).toEqual([]);
+  });
+
+  it("descarta una respuesta vieja solo una vez seguida; la siguiente sale y el mensaje nuevo tiene turno", async () => {
+    let p: Awaited<ReturnType<typeof conMensaje>> | undefined;
+    const nuevos = ["y archiveros", "y también escritorios"];
+    const modelo = aMedia(
+      [
+        respuestaTexto("Son $1,490 + IVA."),
+        respuestaTexto("Te paso sillas y archiveros."),
+        respuestaTexto("Escritorios desde $2,750 + IVA."),
+      ],
+      async (n) => {
+        const texto = nuevos[n];
+        if (!p || !texto) return;
+        p.reloj.avanzar(1_000);
+        await procesarEvento(mensajeWa(texto), p.deps);
+      },
+    );
+    p = await conMensaje(modelo);
+    expect(await tomar(p)).toEqual([p.conv.id]);
+    await procesarTurno(p.conv.id, p.deps);
+    expect(p.wa.textos(CLIENTE)).toEqual([]);
+    // Segundo turno: el cliente vuelve a escribir a media respuesta, pero ya se descartó una.
+    expect(await tomar(p)).toEqual([p.conv.id]);
+    await procesarTurno(p.conv.id, p.deps);
+    expect(p.wa.textos(CLIENTE)).toEqual(["Te paso sillas y archiveros."]);
+    // La respuesta queda antes del mensaje que llegó mientras se generaba: ese mensaje tiene turno.
+    const hilo = await p.repo.mensajesDelHilo(p.conv.id, 1);
+    expect(hilo.at(-1)).toMatchObject({ autor: "cliente", texto: "y también escritorios" });
+    expect(await tomar(p)).toEqual([p.conv.id]);
+    await procesarTurno(p.conv.id, p.deps);
+    expect(p.wa.textos(CLIENTE)).toEqual(["Te paso sillas y archiveros.", "Escritorios desde $2,750 + IVA."]);
+  });
+
+  it("la escalación queda guardada antes de mandar la despedida", async () => {
+    const { deps, repo, wa, conv } = await conMensaje([
+      llamadaHerramienta("escalar", {
+        motivo: "pide_humano",
+        resumen: "Quiere hablar con una persona",
+        urgencia: "hoy",
+        tipo_cliente: "individual",
+      }),
+      respuestaTexto("Claro, Bryan López te atiende en este mismo chat."),
+    ]);
+    let alEnviar: { modo: string; alertas: number } | undefined;
+    const original = wa.texto.bind(wa);
+    wa.texto = async (para, t) => {
+      if (para === CLIENTE)
+        alEnviar = { modo: (await repo.obtenerConversacion(conv.id)).modo, alertas: repo.alertas.length };
+      return original(para, t);
+    };
+    await procesarTurno(conv.id, deps);
+    expect(alEnviar).toEqual({ modo: "esperando_humano", alertas: 1 });
+  });
+
+  it("si se cae después de enviar, el turno retomado completa el cierre sin volver a llamar al modelo", async () => {
+    const p = await conMensaje([respuestaTexto("Hola, ¿cuántas necesitas?")]);
+    const original = p.repo.actualizarConversacion.bind(p.repo);
+    let caida = true;
+    p.repo.actualizarConversacion = async (id, cambios) => {
+      if (caida && "ultimoBot" in cambios) {
+        caida = false;
+        throw new Error("proceso muerto");
+      }
+      return original(id, cambios);
+    };
+    await expect(procesarTurno(p.conv.id, p.deps)).rejects.toThrow("proceso muerto");
+    expect((await p.repo.obtenerConversacion(p.conv.id)).ultimoBot).toBeUndefined();
+    await procesarTurno(p.conv.id, p.deps);
+    expect(p.wa.textos(CLIENTE)).toEqual(["Hola, ¿cuántas necesitas?"]);
+    expect((p.modelo as ReturnType<typeof modeloGuionado>).llamadas).toBe(1);
+    expect((await p.repo.obtenerConversacion(p.conv.id)).ultimoBot).toEqual(INICIO);
+    expect(p.repo.seguimientos.filter((s) => !s.cancelado).map((s) => s.tipo)).toEqual(["toque1"]);
+  });
 });
+
+/** Modelo guionado que corre `durante(n)` dentro de su llamada número n (desde 0), antes de responder. */
+function aMedia(
+  respuestas: Parameters<typeof modeloGuionado>[0],
+  durante: (n: number) => Promise<void>,
+): ModeloCliente & { llamadas: number } {
+  const guion = modeloGuionado(respuestas);
+  return {
+    get llamadas() {
+      return guion.llamadas;
+    },
+    async crear(params) {
+      await durante(guion.llamadas);
+      return guion.crear(params);
+    },
+  };
+}
